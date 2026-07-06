@@ -1,7 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.exceptions import ValidationError
 
 from .serializers import SignupSerializer, VerifyOTPSerializer, LoginSerializer
@@ -165,3 +165,23 @@ class LoginAPIView(APIView):
             },
             status=status.HTTP_400_BAD_REQUEST,
         )
+
+
+class LogoutAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        response = Response(
+            {
+                "success": True,
+                "message": "Logged out successfully.",
+                "data": {},
+            },
+            status=status.HTTP_200_OK,
+        )
+
+        response.delete_cookie("access_token")
+        response.delete_cookie("refresh_token")
+
+        return response
