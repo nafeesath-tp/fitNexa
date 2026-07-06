@@ -4,8 +4,11 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.exceptions import ValidationError
 
-from .serializers import SignupSerializer, VerifyOTPSerializer, LoginSerializer
-from .services import signup_user, verify_otp, login_user
+from .serializers import (
+    SignupSerializer, VerifyOTPSerializer, LoginSerializer,
+    ForgotPasswordSerializer, VerifyResetOTPSerializer, ResetPasswordSerializer,
+)
+from .services import signup_user, verify_otp, login_user, forgot_password, verify_reset_otp, reset_password
 
 
 class SignupAPIView(APIView):
@@ -185,3 +188,127 @@ class LogoutAPIView(APIView):
         response.delete_cookie("refresh_token")
 
         return response
+
+
+class ForgotPasswordAPIView(APIView):
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = ForgotPasswordSerializer(data=request.data)
+
+        if serializer.is_valid():
+            try:
+                forgot_password(serializer.validated_data)
+            except Exception:
+                pass  # Silent — never reveal if email exists or if sending failed
+
+            # Always return success to prevent user enumeration
+            return Response(
+                {
+                    "success": True,
+                    "message": "If this email is registered, a password reset OTP has been sent.",
+                    "data": {},
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        return Response(
+            {
+                "success": False,
+                "message": "Invalid input.",
+                "errors": serializer.errors,
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+class VerifyResetOTPAPIView(APIView):
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = VerifyResetOTPSerializer(data=request.data)
+
+        if serializer.is_valid():
+            try:
+                verify_reset_otp(serializer.validated_data)
+                return Response(
+                    {
+                        "success": True,
+                        "message": "OTP verified successfully. You may now reset your password.",
+                        "data": {},
+                    },
+                    status=status.HTTP_200_OK,
+                )
+            except ValidationError as e:
+                return Response(
+                    {
+                        "success": False,
+                        "message": "OTP verification failed.",
+                        "errors": e.detail,
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        return Response(
+            {
+                "success": False,
+                "message": "Invalid input.",
+                "errors": serializer.errors,
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+class ResetPasswordAPIView(APIView):
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        # OTP is passed alongside new password for atomic verification + reset
+        data = request.data.copy()
+        serializer = ResetPasswordSerializer(data=data)
+
+        if serializer.is_valid():
+            try:
+                # Merge OTP from request into validated_data for the service
+                validated = serializer.validated_data.copy()
+                validated["otp"] = request.data.get("otp", "")
+
+                reset_password(validated)
+                return Response(
+                    {
+                        "success": True,
+                        "message": "Password reset successfully. You can now log in.",
+                        "data": {},
+                    },
+                    status=status.HTTP_200_OK,
+                )
+            except ValidationError as e:
+                return Response(
+                    {
+                        "success": False,
+                        "message": "Password reset failed.",
+                        "errors": e.detail,
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            except Exception:
+                return Response(
+                    {
+                        "success": False,
+                        "message": "Something went wrong. Please try again later.",
+                        "errors": {},
+                    },
+                    status=status.HTTP_503_SERVICE_UNAVAILABLE,
+                )
+
+        return Response(
+            {
+                "success": False,
+                "message": "Invalid input.",
+                "errors": serializer.errors,
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )

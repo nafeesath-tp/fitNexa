@@ -120,3 +120,101 @@ def login_user(validated_data):
         "access": str(access),
         "refresh": str(refresh),
     }
+
+
+def forgot_password(validated_data):
+    """
+    Check user exists, generate a PASSWORD_RESET OTP, and send it by email.
+    Always returns None — never reveals whether the email is registered
+    (prevents user enumeration).
+    """
+    email = validated_data["email"]
+
+    try:
+        user = User.objects.get(email=email)
+    except User.DoesNotExist:
+        # Silent return — don't reveal that the account doesn't exist
+        return
+
+    otp = generate_otp()
+
+    EmailOTP.objects.create(
+        user=user,
+        otp=otp,
+        purpose=EmailOTP.Purpose.PASSWORD_RESET,
+        expires_at=timezone.now() + timedelta(minutes=5),
+    )
+
+    send_otp_email(email=user.email, otp=otp)
+
+
+def verify_reset_otp(validated_data):
+    """
+    Validate the PASSWORD_RESET OTP without consuming it.
+    The OTP is consumed only when reset_password() is called.
+    Raises ValidationError on failure.
+    """
+    email = validated_data["email"]
+    otp = validated_data["otp"]
+
+    try:
+        user = User.objects.get(email=email)
+    except User.DoesNotExist:
+        raise serializers.ValidationError({"email": "No account found with this email."})
+
+    otp_record = (
+        EmailOTP.objects.filter(
+            user=user,
+            otp=otp,
+            purpose=EmailOTP.Purpose.PASSWORD_RESET,
+            is_used=False,
+            expires_at__gt=timezone.now(),
+        )
+        .order_by("-created_at")
+        .first()
+    )
+
+    if not otp_record:
+        raise serializers.ValidationError({"otp": "Invalid or expired OTP."})
+
+    return user
+
+
+@transaction.atomic
+def reset_password(validated_data):
+    """
+    Verify the PASSWORD_RESET OTP, consume it, and set the new password.
+    Raises ValidationError if OTP is invalid or expired.
+    """
+    email = validated_data["email"]
+    otp_value = validated_data.get("otp")
+    new_password = validated_data["password"]
+
+    try:
+        user = User.objects.get(email=email)
+    except User.DoesNotExist:
+        raise serializers.ValidationError({"email": "No account found with this email."})
+
+    otp_record = (
+        EmailOTP.objects.filter(
+            user=user,
+            otp=otp_value,
+            purpose=EmailOTP.Purpose.PASSWORD_RESET,
+            is_used=False,
+            expires_at__gt=timezone.now(),
+        )
+        .order_by("-created_at")
+        .first()
+    )
+
+    if not otp_record:
+        raise serializers.ValidationError({"otp": "Invalid or expired OTP."})
+
+    # Consume OTP and set new password atomically
+    otp_record.is_used = True
+    otp_record.save(update_fields=["is_used"])
+
+    user.set_password(new_password)
+    user.save(update_fields=["password"])
+
+    return user
