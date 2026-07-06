@@ -3,6 +3,7 @@ from datetime import timedelta
 from django.db import transaction
 from django.utils import timezone
 from rest_framework import serializers
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import User, EmailOTP
 from .utils import generate_otp, send_otp_email
@@ -77,3 +78,45 @@ def verify_otp(validated_data):
     user.save(update_fields=["is_verified"])
 
     return user
+
+
+def login_user(validated_data):
+    """
+    Authenticate user, check account state, and generate JWT tokens.
+    Returns an extensible dict: { user, access, refresh }.
+    Raises ValidationError on any failure.
+    """
+    email = validated_data["email"]
+    password = validated_data["password"]
+
+    # Use a generic message to prevent user enumeration
+    invalid_credentials_error = serializers.ValidationError(
+        {"email": "Invalid email or password."}
+    )
+
+    try:
+        user = User.objects.get(email=email)
+    except User.DoesNotExist:
+        raise invalid_credentials_error
+
+    if not user.check_password(password):
+        raise invalid_credentials_error
+
+    if not user.is_verified:
+        raise serializers.ValidationError(
+            {"email": "Please verify your email before logging in."}
+        )
+
+    if not user.is_active:
+        raise serializers.ValidationError(
+            {"email": "Your account has been deactivated. Please contact support."}
+        )
+
+    refresh = RefreshToken.for_user(user)
+    access = refresh.access_token
+
+    return {
+        "user": user,
+        "access": str(access),
+        "refresh": str(refresh),
+    }
