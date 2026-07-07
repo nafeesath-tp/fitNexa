@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'accounts',
     'trainer',
     'client',
+    'admin_api',
 
 ]
 
