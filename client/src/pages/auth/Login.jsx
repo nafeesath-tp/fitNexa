@@ -7,10 +7,13 @@ import toast from 'react-hot-toast';
 import { authApi } from '../../services/auth/authApi';
 import { useAuthStore } from '../../stores/authStore';
 import { getHomeRoute } from '../../utils/redirectUser';
+import { Dumbbell } from 'lucide-react';
 
 import Input from '../../components/ui/Input';
 import PasswordInput from '../../components/ui/PasswordInput';
 import Button from '../../components/ui/Button';
+import { FormField, FormLabel, FormError } from '../../components/ui/Form';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/Card';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -31,14 +34,8 @@ const Login = () => {
       
       if (response.success) {
         toast.success(response.message || 'Login successful!');
-        
-        // 1. Update Zustand store
         setAuth(response.data);
-        
-        // 2. Get role-based route
         const route = getHomeRoute(response.data);
-        
-        // 3. Navigate with replace to prevent back-button loops
         navigate(route, { replace: true });
       } else {
         toast.error(response.message || 'Invalid credentials.');
@@ -51,39 +48,56 @@ const Login = () => {
   };
 
   return (
-    <div>
-      <h2 className="auth-title">Welcome Back</h2>
-      <p style={{ textAlign: 'center', color: '#4b5563', marginBottom: '1.5rem', fontSize: '0.95rem' }}>
-        Log in to your FitNexa account
-      </p>
-
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <Input 
-          label="Email Address" 
-          type="email" 
-          placeholder="john@example.com" 
-          {...register('email')} 
-          error={errors.email?.message} 
-        />
-        
-        <PasswordInput 
-          label="Password" 
-          placeholder="••••••••" 
-          {...register('password')} 
-          error={errors.password?.message} 
-        />
-
-        <Button type="submit" isLoading={isLoading} style={{ marginTop: '1rem' }}>
-          Log In
-        </Button>
-      </form>
-
-      <p style={{ textAlign: 'center', marginTop: '1.5rem', color: '#4b5563', fontSize: '0.9rem' }}>
-        Don't have an account?{' '}
-        <Link to="/signup" style={{ color: '#2563eb', fontWeight: '500', textDecoration: 'none' }}>
-          Sign up
+    <div className="w-full max-w-md">
+      <div className="mb-8 flex justify-center">
+        <Link to="/" className="flex items-center text-xl font-bold tracking-tight text-white hover:text-primary transition-colors">
+          Fit<span className="text-primary">Nexa</span>
         </Link>
-      </p>
+      </div>
+      <Card>
+        <CardHeader className="space-y-2 text-center pb-8">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+            <Dumbbell className="h-6 w-6 text-primary" />
+          </div>
+          <CardTitle className="text-2xl">Welcome Back</CardTitle>
+          <CardDescription>Log in to your FitNexa account</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <FormField>
+              <FormLabel>Email Address</FormLabel>
+              <Input 
+                type="email" 
+                placeholder="john@example.com" 
+                {...register('email')} 
+                error={errors.email} 
+              />
+              <FormError error={errors.email} />
+            </FormField>
+            
+            <FormField>
+              <FormLabel>Password</FormLabel>
+              <PasswordInput 
+                placeholder="••••••••" 
+                {...register('password')} 
+                error={errors.password} 
+              />
+              <FormError error={errors.password} />
+            </FormField>
+
+            <Button type="submit" isLoading={isLoading} className="w-full mt-6">
+              Log In
+            </Button>
+          </form>
+
+          <p className="mt-6 text-center text-sm text-muted">
+            Don't have an account?{' '}
+            <Link to="/signup" className="font-semibold text-primary hover:text-primary-hover transition-colors">
+              Sign up
+            </Link>
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 };

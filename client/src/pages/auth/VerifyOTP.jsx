@@ -2,12 +2,15 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { verifyOtpSchema } from '../../validation/verifyOtpSchema';
-import { useLocation, useNavigate, Navigate } from 'react-router-dom';
+import { useLocation, useNavigate, Navigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../api/axios';
+import { ShieldCheck } from 'lucide-react';
 
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
+import { FormField, FormLabel, FormError } from '../../components/ui/Form';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/Card';
 
 const VerifyOTP = () => {
   const location = useLocation();
@@ -20,7 +23,6 @@ const VerifyOTP = () => {
     resolver: zodResolver(verifyOtpSchema),
   });
 
-  // If someone navigates to /verify-otp directly without an email in state
   if (!email) {
     return <Navigate to="/signup" replace />;
   }
@@ -47,25 +49,42 @@ const VerifyOTP = () => {
   };
 
   return (
-    <div>
-      <h2 className="auth-title">Verify Email</h2>
-      <p style={{ textAlign: 'center', color: '#4b5563', marginBottom: '1.5rem', fontSize: '0.95rem' }}>
-        We sent a 6-digit verification code to <strong>{email}</strong>
-      </p>
+    <div className="w-full max-w-md">
+      <div className="mb-8 flex justify-center">
+        <Link to="/" className="flex items-center text-xl font-bold tracking-tight text-white hover:text-primary transition-colors">
+          Fit<span className="text-primary">Nexa</span>
+        </Link>
+      </div>
       
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <Input 
-          label="Verification Code (OTP)" 
-          placeholder="123456" 
-          maxLength={6}
-          {...register('otp')} 
-          error={errors.otp?.message} 
-        />
+      <Card>
+        <CardHeader className="space-y-2 text-center pb-8">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+            <ShieldCheck className="h-6 w-6 text-primary" />
+          </div>
+          <CardTitle className="text-2xl">OTP Verification</CardTitle>
+          <CardDescription>
+            We sent a 6-digit verification code to <strong className="text-gray-200">{email}</strong>
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <FormField>
+              <FormLabel>Verification Code (OTP)</FormLabel>
+              <Input 
+                placeholder="123456" 
+                maxLength={6}
+                {...register('otp')} 
+                error={errors.otp} 
+              />
+              <FormError error={errors.otp} />
+            </FormField>
 
-        <Button type="submit" isLoading={isLoading} style={{ marginTop: '1rem' }}>
-          Verify OTP
-        </Button>
-      </form>
+            <Button type="submit" isLoading={isLoading} className="w-full mt-6">
+              Verify OTP
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 };

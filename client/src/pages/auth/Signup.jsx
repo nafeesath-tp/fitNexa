@@ -5,11 +5,14 @@ import { signupSchema } from '../../validation/signupSchema';
 import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { authApi } from '../../services/auth/authApi';
+import { Dumbbell, User, ShieldAlert } from 'lucide-react';
 
 import Input from '../../components/ui/Input';
 import PasswordInput from '../../components/ui/PasswordInput';
 import Button from '../../components/ui/Button';
-import RadioGroup from '../../components/ui/RadioGroup';
+import RadioGroup, { RadioOption } from '../../components/ui/RadioGroup';
+import { FormField, FormLabel, FormError, FormSection } from '../../components/ui/Form';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/Card';
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -25,7 +28,6 @@ const Signup = () => {
   const onSubmit = async (data) => {
     try {
       setIsLoading(true);
-      // Backend expects role as uppercase, Zod already guarantees it
       const response = await authApi.signup({
         email: data.email,
         password: data.password,
@@ -35,7 +37,6 @@ const Signup = () => {
       
       if (response.success) {
         toast.success(response.message || 'OTP sent successfully!');
-        // Pass email to verify OTP page
         navigate('/verify-otp', { state: { email: data.email } });
       } else {
         toast.error(response.message || 'Failed to sign up.');
@@ -48,54 +49,84 @@ const Signup = () => {
   };
 
   return (
-    <div>
-      <h2 className="auth-title">Create Account</h2>
-      <form onSubmit={handleSubmit(onSubmit)}>
-        
-        <Input 
-          label="Email Address" 
-          type="email" 
-          placeholder="john@example.com" 
-          {...register('email')} 
-          error={errors.email?.message} 
-        />
-        
-        <PasswordInput 
-          label="Password" 
-          placeholder="••••••••" 
-          {...register('password')} 
-          error={errors.password?.message} 
-        />
-        
-        <PasswordInput 
-          label="Confirm Password" 
-          placeholder="••••••••" 
-          {...register('confirm_password')} 
-          error={errors.confirm_password?.message} 
-        />
-
-        <RadioGroup
-          label="I want to sign up as a:"
-          options={[
-            { label: 'Client', value: 'CLIENT' },
-            { label: 'Trainer', value: 'TRAINER' }
-          ]}
-          {...register('role')}
-          error={errors.role?.message}
-          style={{ marginBottom: '1.5rem' }}
-        />
-
-        <Button type="submit" isLoading={isLoading} style={{ marginTop: '1rem' }}>
-          Sign Up
-        </Button>
-      </form>
-      
-      <p style={{ textAlign: 'center', marginTop: '1.5rem', color: '#4b5563', fontSize: '0.9rem' }}>
-        Already have an account?{' '}
-        <Link to="/login" style={{ color: '#2563eb', fontWeight: '500', textDecoration: 'none' }}>
-          Log in
+    <div className="w-full max-w-md">
+      <div className="mb-8 flex justify-center">
+        <Link to="/" className="flex items-center text-xl font-bold tracking-tight text-white hover:text-primary transition-colors">
+          Fit<span className="text-primary">Nexa</span>
         </Link>
-      </p>
+      </div>
+      <Card>
+        <CardHeader className="space-y-2 text-center pb-8">
+          <CardTitle className="text-2xl">Create Account</CardTitle>
+          <CardDescription>Join FitNexa and start your journey</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            
+            <FormField>
+              <FormLabel>Email Address</FormLabel>
+              <Input 
+                type="email" 
+                placeholder="john@example.com" 
+                {...register('email')} 
+                error={errors.email} 
+              />
+              <FormError error={errors.email} />
+            </FormField>
+            
+            <FormField>
+              <FormLabel>Password</FormLabel>
+              <PasswordInput 
+                placeholder="••••••••" 
+                {...register('password')} 
+                error={errors.password} 
+              />
+              <FormError error={errors.password} />
+            </FormField>
+            
+            <FormField>
+              <FormLabel>Confirm Password</FormLabel>
+              <PasswordInput 
+                placeholder="••••••••" 
+                {...register('confirm_password')} 
+                error={errors.confirm_password} 
+              />
+              <FormError error={errors.confirm_password} />
+            </FormField>
+
+            <FormSection title="Account Type" className="mt-6 p-4">
+              <RadioGroup className="grid-cols-2">
+                <RadioOption 
+                  value="CLIENT"
+                  label="Client"
+                  icon={User}
+                  error={errors.role}
+                  {...register('role')}
+                />
+                <RadioOption 
+                  value="TRAINER"
+                  label="Trainer"
+                  icon={ShieldAlert}
+                  error={errors.role}
+                  {...register('role')}
+                />
+              </RadioGroup>
+              <FormError error={errors.role} />
+            </FormSection>
+
+            <Button type="submit" isLoading={isLoading} className="w-full mt-6">
+              Sign Up
+            </Button>
+          </form>
+          
+          <p className="mt-6 text-center text-sm text-muted">
+            Already have an account?{' '}
+            <Link to="/login" className="font-semibold text-primary hover:text-primary-hover transition-colors">
+              Log in
+            </Link>
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 };
