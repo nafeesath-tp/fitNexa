@@ -107,24 +107,12 @@ class LoginAPIView(APIView):
         if serializer.is_valid():
             try:
                 result = login_user(serializer.validated_data)
-                user = result["user"]
-
-                response_data = {
-                    "email": user.email,
-                    "role": user.role,
-                }
                 
-                if user.role == "TRAINER":
-                    if hasattr(user, 'trainer_profile'):
-                        response_data["approval_status"] = user.trainer_profile.approval_status
-                    else:
-                        response_data["approval_status"] = "PENDING_ONBOARDING" # Or whatever makes sense if no profile yet
-
                 response = Response(
                     {
                         "success": True,
                         "message": "Login successful.",
-                        "data": response_data,
+                        "data": result["response_data"],
                     },
                     status=status.HTTP_200_OK,
                 )

@@ -115,10 +115,28 @@ def login_user(validated_data):
     refresh = RefreshToken.for_user(user)
     access = refresh.access_token
 
+    response_data = {
+        "email": user.email,
+        "role": user.role,
+    }
+
+    if user.role == "TRAINER":
+        try:
+            response_data["approval_status"] = user.trainer_profile.approval_status
+        except Exception:
+            response_data["approval_status"] = "PENDING_ONBOARDING"
+            
+    elif user.role == "CLIENT":
+        try:
+            response_data["is_profile_completed"] = user.client_profile.is_profile_completed
+        except Exception:
+            response_data["is_profile_completed"] = False
+
     return {
         "user": user,
         "access": str(access),
         "refresh": str(refresh),
+        "response_data": response_data,
     }
 
 
