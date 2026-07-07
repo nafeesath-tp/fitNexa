@@ -28,16 +28,15 @@ const AdminLayout = () => {
   ];
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
+    <div className="flex min-h-screen flex-col bg-background">
       <Navbar 
         logoText="Admin"
         logoPath="/admin/dashboard"
         links={navLinks}
         onLogout={handleLogout}
-        // No profileData for Admin since it's just "ADMIN"
       />
 
-      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem' }}>
+      <main className="flex-1">
         <Outlet />
       </main>
     </div>

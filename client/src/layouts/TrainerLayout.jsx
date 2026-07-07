@@ -29,7 +29,7 @@ const TrainerLayout = () => {
   ];
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
+    <div className="flex min-h-screen flex-col bg-background">
       <Navbar 
         logoText="Trainer"
         logoPath="/trainer/home"
@@ -42,7 +42,7 @@ const TrainerLayout = () => {
         onLogout={handleLogout}
       />
 
-      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem' }}>
+      <main className="flex-1">
         <Outlet />
       </main>
     </div>

@@ -7,61 +7,56 @@ const Navbar = ({
   logoPath = "/", 
   links = [], 
   profilePath = "/", 
-  profileData = null, // { image, name }
+  profileData = null, 
   onLogout 
 }) => {
   return (
-    <header style={{ 
-      backgroundColor: '#ffffff', 
-      borderBottom: '1px solid #e5e7eb',
-      padding: '1rem 2rem',
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      position: 'sticky',
-      top: 0,
-      zIndex: 10
-    }}>
-      {/* Logo Area */}
-      <Link to={logoPath} style={{ textDecoration: 'none', color: '#111827', fontWeight: 'bold', fontSize: '1.5rem' }}>
-        FitNexa <span style={{ color: '#2563eb' }}>{logoText}</span>
-      </Link>
-      
-      {/* Navigation Links */}
-      <nav style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-        {links.map((link, idx) => (
-          <Link key={idx} to={link.path} style={{ textDecoration: 'none', color: '#4b5563', fontWeight: '500' }}>
-            {link.label}
-          </Link>
-        ))}
+    <header className="sticky top-0 z-10 w-full border-b border-border/10 bg-background/80 px-6 py-4 backdrop-blur-md">
+      <div className="mx-auto flex w-full max-w-7xl items-center justify-between">
+        {/* Logo Area */}
+        <Link to={logoPath} className="flex items-center text-xl font-bold tracking-tight text-white hover:text-primary transition-colors">
+          Fit<span className="text-primary">Nexa</span>
+          {logoText && (
+            <>
+              <span className="mx-2 text-border/40">|</span>
+              <span className="text-sm font-medium text-muted">{logoText}</span>
+            </>
+          )}
+        </Link>
         
-        {onLogout && (
-          <button 
-            onClick={onLogout}
-            style={{ 
-              background: 'none', 
-              border: 'none', 
-              color: '#ef4444', 
-              fontWeight: '500', 
-              cursor: 'pointer',
-              padding: '0.5rem'
-            }}
-          >
-            Logout
-          </button>
-        )}
-        
-        {/* Avatar Profile Link */}
-        {profileData && (
-          <Link to={profilePath} style={{ textDecoration: 'none' }}>
-            <Avatar 
-              image={profileData.image} 
-              name={profileData.name || 'User'} 
-              size="sm" 
-            />
-          </Link>
-        )}
-      </nav>
+        {/* Navigation Links */}
+        <nav className="flex items-center gap-6">
+          {links.map((link, idx) => (
+            <Link 
+              key={idx} 
+              to={link.path} 
+              className="text-sm font-medium text-gray-300 hover:text-primary transition-colors"
+            >
+              {link.label}
+            </Link>
+          ))}
+          
+          {onLogout && (
+            <button 
+              onClick={onLogout}
+              className="text-sm font-medium text-danger hover:text-red-400 transition-colors"
+            >
+              Logout
+            </button>
+          )}
+          
+          {/* Avatar Profile Link */}
+          {profileData && (
+            <Link to={profilePath} className="ml-2 hover:opacity-80 transition-opacity">
+              <Avatar 
+                image={profileData.image} 
+                name={profileData.name || 'User'} 
+                size="sm" 
+              />
+            </Link>
+          )}
+        </nav>
+      </div>
     </header>
   );
 };

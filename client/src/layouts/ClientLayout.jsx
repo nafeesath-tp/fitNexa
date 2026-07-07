@@ -29,7 +29,7 @@ const ClientLayout = () => {
   ];
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
+    <div className="flex min-h-screen flex-col bg-background">
       <Navbar 
         logoText="Client"
         logoPath="/client/home"
@@ -42,8 +42,7 @@ const ClientLayout = () => {
         onLogout={handleLogout}
       />
 
-      {/* Main Content Area */}
-      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem' }}>
+      <main className="flex-1">
         <Outlet />
       </main>
     </div>
