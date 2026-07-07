@@ -19,9 +19,12 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
+from accounts.views import PublicSpecializationListAPIView
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/auth/', include('accounts.urls')),
+    path('api/public/specializations/', PublicSpecializationListAPIView.as_view(), name="public-specializations"),
     path('api/trainer/', include('trainer.urls')),
     path('api/client/', include('client.urls')),
     path('api/admin/', include('admin_api.urls')),

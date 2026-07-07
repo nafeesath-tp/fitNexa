@@ -7,8 +7,20 @@ from rest_framework.exceptions import ValidationError
 from .serializers import (
     SignupSerializer, VerifyOTPSerializer, LoginSerializer,
     ForgotPasswordSerializer, VerifyResetOTPSerializer, ResetPasswordSerializer,
+    PublicSpecializationSerializer
 )
 from .services import signup_user, verify_otp, login_user, forgot_password, verify_reset_otp, reset_password
+from .models import Specialization
+
+class PublicSpecializationListAPIView(APIView):
+    permission_classes = [AllowAny]
+    def get(self, request):
+        specializations = Specialization.objects.filter(is_active=True)
+        serializer = PublicSpecializationSerializer(specializations, many=True)
+        return Response({
+            "success": True,
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
 
 
 class SignupAPIView(APIView):

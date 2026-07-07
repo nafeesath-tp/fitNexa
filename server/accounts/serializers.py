@@ -1,7 +1,14 @@
 from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
 
-from .models import User
+from .models import User, EmailOTP, Specialization
+import re
+
+
+class PublicSpecializationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Specialization
+        fields = ['id', 'name', 'description']
 
 
 class SignupSerializer(serializers.Serializer):
