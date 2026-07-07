@@ -23,6 +23,10 @@ import TrainerPending from './pages/trainer/Pending';
 import TrainerHome from './pages/trainer/Home';
 import TrainerEditProfile from './pages/trainer/EditProfile';
 import AdminLayout from './layouts/AdminLayout';
+import AdminDashboard from './pages/admin/Dashboard';
+import AdminTrainers from './pages/admin/Trainers';
+import AdminClients from './pages/admin/Clients';
+import AdminSpecializations from './pages/admin/Specializations';
 
 // --- Placeholder Pages (To be built later) ---
 const Placeholder = ({ title }) => <div><h2>{title} Page</h2></div>;
@@ -91,10 +95,10 @@ function App() {
         {/* ADMIN ROUTES (Protected) */}
         <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
           <Route path="/admin" element={<AdminLayout />}>
-            <Route path="dashboard" element={<Placeholder title="Admin Dashboard" />} />
-            <Route path="trainers" element={<Placeholder title="Admin Trainers Management" />} />
-            <Route path="clients" element={<Placeholder title="Admin Clients Management" />} />
-            <Route path="specializations" element={<Placeholder title="Admin Specializations" />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="trainers" element={<AdminTrainers />} />
+            <Route path="clients" element={<AdminClients />} />
+            <Route path="specializations" element={<AdminSpecializations />} />
           </Route>
         </Route>
 
