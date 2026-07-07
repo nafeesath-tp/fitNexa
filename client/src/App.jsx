@@ -1,122 +1,94 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useEffect } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
+import { useAuthStore } from './stores/authStore';
+import { authApi } from './services/auth/authApi';
+
+// Components & Layouts
+import LoadingScreen from './components/LoadingScreen';
+import ProtectedRoute from './routes/ProtectedRoute';
+import PublicRoute from './routes/PublicRoute';
+import ClientLayout from './layouts/ClientLayout';
+import TrainerLayout from './layouts/TrainerLayout';
+import AdminLayout from './layouts/AdminLayout';
+
+// --- Placeholder Pages (To be built later) ---
+const Placeholder = ({ title }) => <div><h2>{title} Page</h2></div>;
 
 function App() {
-  const [count, setCount] = useState(0)
+  const { isLoading } = useAuthStore();
+
+  useEffect(() => {
+    // Check authentication status on initial load
+    const initAuth = async () => {
+      try {
+        const response = await authApi.checkAuth();
+        if (response.success) {
+          useAuthStore.getState().setAuth(response.data);
+        } else {
+          useAuthStore.getState().clearAuth();
+        }
+      } catch (error) {
+        useAuthStore.getState().clearAuth();
+      } finally {
+        useAuthStore.getState().setLoading(false);
+      }
+    };
+    
+    initAuth();
+  }, []);
+
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <BrowserRouter>
+      <Toaster position="top-right" />
+      <Routes>
+        
+        {/* PUBLIC ROUTES (Logged out users only) */}
+        <Route element={<PublicRoute />}>
+          <Route path="/" element={<Placeholder title="Landing" />} />
+          <Route path="/login" element={<Placeholder title="Login" />} />
+          <Route path="/signup" element={<Placeholder title="Signup" />} />
+          <Route path="/verify-otp" element={<Placeholder title="Verify OTP" />} />
+        </Route>
 
-      <div className="ticks"></div>
+        {/* CLIENT ROUTES (Protected) */}
+        <Route element={<ProtectedRoute allowedRoles={['CLIENT']} />}>
+          <Route path="/client" element={<ClientLayout />}>
+            <Route path="setup" element={<Placeholder title="Client Profile Setup" />} />
+            <Route path="home" element={<Placeholder title="Client Home" />} />
+            <Route path="profile" element={<Placeholder title="Client Profile" />} />
+          </Route>
+        </Route>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+        {/* TRAINER ROUTES (Protected) */}
+        <Route element={<ProtectedRoute allowedRoles={['TRAINER']} />}>
+          <Route path="/trainer" element={<TrainerLayout />}>
+            <Route path="onboarding" element={<Placeholder title="Trainer Onboarding" />} />
+            <Route path="pending" element={<Placeholder title="Trainer Pending" />} />
+            <Route path="profile" element={<Placeholder title="Trainer Profile" />} />
+          </Route>
+        </Route>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+        {/* ADMIN ROUTES (Protected) */}
+        <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route path="dashboard" element={<Placeholder title="Admin Dashboard" />} />
+            <Route path="trainers" element={<Placeholder title="Admin Trainers Management" />} />
+            <Route path="clients" element={<Placeholder title="Admin Clients Management" />} />
+            <Route path="specializations" element={<Placeholder title="Admin Specializations" />} />
+          </Route>
+        </Route>
+
+        {/* 404 Fallback */}
+        <Route path="*" element={<Placeholder title="404 Not Found" />} />
+
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
-export default App
+export default App;

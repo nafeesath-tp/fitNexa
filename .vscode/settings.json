@@ -1,0 +1,7 @@
+{
+  "python.defaultInterpreterPath": "c:\\Users\\HP\\OneDrive\\Desktop\\fitNexa\\server\\myenv\\Scripts\\python.exe",
+  "python.analysis.extraPaths": [
+    "c:\\Users\\HP\\OneDrive\\Desktop\\fitNexa\\server\\myenv\\Lib\\site-packages"
+  ],
+  "pyrefly.pythonInterpreter": "c:\\Users\\HP\\OneDrive\\Desktop\\fitNexa\\server\\myenv\\Scripts\\python.exe"
+}
