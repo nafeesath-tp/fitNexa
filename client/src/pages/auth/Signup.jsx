@@ -27,10 +27,9 @@ const Signup = () => {
       setIsLoading(true);
       // Backend expects role as uppercase, Zod already guarantees it
       const response = await authApi.signup({
-        first_name: data.first_name,
-        last_name: data.last_name,
         email: data.email,
         password: data.password,
+        confirm_password: data.confirm_password,
         role: data.role
       });
       
@@ -53,21 +52,6 @@ const Signup = () => {
       <h2 className="auth-title">Create Account</h2>
       <form onSubmit={handleSubmit(onSubmit)}>
         
-        <div style={{ display: 'flex', gap: '1rem' }}>
-          <Input 
-            label="First Name" 
-            placeholder="John" 
-            {...register('first_name')} 
-            error={errors.first_name?.message} 
-          />
-          <Input 
-            label="Last Name" 
-            placeholder="Doe" 
-            {...register('last_name')} 
-            error={errors.last_name?.message} 
-          />
-        </div>
-
         <Input 
           label="Email Address" 
           type="email" 
