@@ -8,6 +8,11 @@ import { authApi } from './services/auth/authApi';
 import PageLoader from './components/ui/PageLoader';
 import ProtectedRoute from './routes/ProtectedRoute';
 import PublicRoute from './routes/PublicRoute';
+import AuthLayout from './layouts/AuthLayout';
+import Landing from './pages/auth/Landing';
+import Login from './pages/auth/Login';
+import Signup from './pages/auth/Signup';
+import VerifyOTP from './pages/auth/VerifyOTP';
 import ClientLayout from './layouts/ClientLayout';
 import TrainerLayout from './layouts/TrainerLayout';
 import AdminLayout from './layouts/AdminLayout';
@@ -49,10 +54,12 @@ function App() {
         
         {/* PUBLIC ROUTES (Logged out users only) */}
         <Route element={<PublicRoute />}>
-          <Route path="/" element={<Placeholder title="Landing" />} />
-          <Route path="/login" element={<Placeholder title="Login" />} />
-          <Route path="/signup" element={<Placeholder title="Signup" />} />
-          <Route path="/verify-otp" element={<Placeholder title="Verify OTP" />} />
+          <Route element={<AuthLayout />}>
+            <Route path="/" element={<Landing />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/verify-otp" element={<VerifyOTP />} />
+          </Route>
         </Route>
 
         {/* CLIENT ROUTES (Protected) */}
