@@ -1,16 +1,17 @@
 import React from 'react';
-import PageHeader from '../../components/admin/PageHeader';
-import StatCard from '../../components/admin/StatCard';
+import { PageHeader } from '../../components/ui/LayoutComponents';
+import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import DataTable from '../../components/admin/DataTable';
-import StatusBadge from '../../components/admin/StatusBadge';
+import Badge from '../../components/ui/Badge';
+import { Users, UserCheck, Star, ShieldCheck } from 'lucide-react';
 
 const Dashboard = () => {
   // Dummy data as per version 1 scope
   const stats = [
-    { title: 'Total Clients', value: '124', icon: '👥', color: '#2563eb' },
-    { title: 'Total Trainers', value: '32', icon: '🏋️', color: '#16a34a' },
-    { title: 'Specializations', value: '5', icon: '⭐', color: '#d97706' },
-    { title: 'Active Trainers', value: '18', icon: '✅', color: '#9333ea' }
+    { title: 'Total Clients', value: '124', icon: Users, colorClass: 'text-blue-500' },
+    { title: 'Total Trainers', value: '32', icon: UserCheck, colorClass: 'text-green-500' },
+    { title: 'Specializations', value: '5', icon: Star, colorClass: 'text-amber-500' },
+    { title: 'Active Trainers', value: '18', icon: ShieldCheck, colorClass: 'text-purple-500' }
   ];
 
   const recentTrainers = [
@@ -25,29 +26,38 @@ const Dashboard = () => {
   ];
 
   return (
-    <div>
+    <div className="py-6 space-y-8">
       <PageHeader 
         title="Admin Dashboard" 
         description="Overview of FitNexa platform metrics."
       />
 
       {/* Stats Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
-        {stats.map((stat, idx) => (
-          <StatCard 
-            key={idx}
-            title={stat.title}
-            value={stat.value}
-            icon={stat.icon}
-            color={stat.color}
-          />
-        ))}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {stats.map((stat, idx) => {
+          const Icon = stat.icon;
+          return (
+            <Card key={idx} className="hover:border-primary/30 transition-colors">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted mb-1">{stat.title}</p>
+                    <h3 className="text-3xl font-bold text-gray-100">{stat.value}</h3>
+                  </div>
+                  <div className={`p-3 rounded-full bg-surface shadow-inner border border-border/10 ${stat.colorClass}`}>
+                    <Icon className="w-6 h-6" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }}>
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
         {/* Recent Trainers */}
-        <div>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827', marginBottom: '1rem' }}>
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold text-gray-100 flex items-center gap-2">
             Recent Trainer Applications
           </h2>
           <DataTable 
@@ -57,7 +67,15 @@ const Dashboard = () => {
               { 
                 header: 'Status', 
                 accessor: 'status',
-                render: (row) => <StatusBadge status={row.status} /> 
+                render: (row) => (
+                  <Badge variant={
+                    row.status === 'APPROVED' ? 'success' :
+                    row.status === 'PENDING' ? 'warning' :
+                    row.status === 'REJECTED' ? 'danger' : 'secondary'
+                  }>
+                    {row.status}
+                  </Badge>
+                )
               }
             ]}
             data={recentTrainers}
@@ -65,8 +83,8 @@ const Dashboard = () => {
         </div>
 
         {/* Recent Clients */}
-        <div>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827', marginBottom: '1rem' }}>
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold text-gray-100 flex items-center gap-2">
             Newest Clients
           </h2>
           <DataTable 

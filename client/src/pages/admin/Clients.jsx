@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
+import { Eye, Target } from 'lucide-react';
 
 import { adminApi } from '../../services/admin/adminApi';
 import { useAdminStore } from '../../stores/adminStore';
 
-import PageHeader from '../../components/admin/PageHeader';
+import { PageHeader } from '../../components/ui/LayoutComponents';
 import DataTable from '../../components/admin/DataTable';
-import Modal from '../../components/admin/Modal';
-import StatusBadge from '../../components/admin/StatusBadge';
+import Modal from '../../components/ui/Modal';
+import Badge from '../../components/ui/Badge';
+import Avatar from '../../components/ui/Avatar';
 
 const Clients = () => {
   const { clients, setClients } = useAdminStore();
@@ -51,15 +53,11 @@ const Clients = () => {
       header: 'Client', 
       accessor: 'name',
       render: (row) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <img 
-            src={row.profile_image || 'https://via.placeholder.com/40'} 
-            alt={row.first_name} 
-            style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} 
-          />
+        <div className="flex items-center gap-3">
+          <Avatar image={row.profile_image} name={`${row.first_name} ${row.last_name}`} size="md" />
           <div>
-            <div style={{ fontWeight: '500', color: '#111827' }}>{row.first_name} {row.last_name}</div>
-            <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{row.user?.email || 'No email'}</div>
+            <div className="font-medium text-gray-100">{row.first_name} {row.last_name}</div>
+            <div className="text-xs text-muted">{row.user?.email || 'No email'}</div>
           </div>
         </div>
       )
@@ -73,24 +71,29 @@ const Clients = () => {
     { 
       header: 'Status', 
       accessor: 'status',
-      render: (row) => <StatusBadge status={row.user?.is_active ? 'ACTIVE' : 'INACTIVE'} />
+      render: (row) => (
+        <Badge variant={row.user?.is_active ? 'success' : 'secondary'}>
+          {row.user?.is_active ? 'Active' : 'Inactive'}
+        </Badge>
+      )
     },
     {
       header: 'Actions',
       accessor: 'actions',
       render: (row) => (
         <button 
-          onClick={() => handleViewDetails(row)}
-          style={{ color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '500' }}
+          onClick={(e) => { e.stopPropagation(); handleViewDetails(row); }}
+          className="flex items-center gap-1 text-primary hover:text-primary-hover transition-colors font-medium text-sm"
         >
-          View Details
+          <Eye className="w-4 h-4" />
+          Details
         </button>
       )
     }
   ];
 
   return (
-    <div>
+    <div className="py-6 space-y-6">
       <PageHeader 
         title="Client Management" 
         description="View registered clients and their fitness profiles."
@@ -109,58 +112,64 @@ const Clients = () => {
           isOpen={isViewModalOpen} 
           onClose={() => setIsViewModalOpen(false)} 
           title="Client Details"
+          maxWidth="md"
         >
-          <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1.5rem' }}>
-            <img 
-              src={selectedClient.profile_image || 'https://via.placeholder.com/80'} 
-              alt="Profile" 
-              style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover' }} 
-            />
+          <div className="space-y-6">
+            <div className="flex items-center gap-6">
+              <Avatar 
+                image={selectedClient.profile_image} 
+                name={`${selectedClient.first_name} ${selectedClient.last_name}`} 
+                size="xl" 
+                className="border-2 border-primary/20 shadow-md"
+              />
+              <div>
+                <h3 className="text-xl font-bold text-gray-100 mb-1">
+                  {selectedClient.first_name} {selectedClient.last_name}
+                </h3>
+                <p className="text-sm text-muted mb-3">
+                  {selectedClient.user?.email} • {selectedClient.phone || 'No phone'}
+                </p>
+                <Badge variant={selectedClient.user?.is_active ? 'success' : 'secondary'}>
+                  {selectedClient.user?.is_active ? 'Active' : 'Inactive'}
+                </Badge>
+              </div>
+            </div>
+
             <div>
-              <h3 style={{ margin: '0 0 0.25rem 0', fontSize: '1.25rem', color: '#111827' }}>
-                {selectedClient.first_name} {selectedClient.last_name}
-              </h3>
-              <p style={{ margin: 0, color: '#6b7280', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-                {selectedClient.user?.email} • {selectedClient.phone || 'No phone'}
-              </p>
-              <StatusBadge status={selectedClient.user?.is_active ? 'ACTIVE' : 'INACTIVE'} />
+              <h4 className="text-sm font-semibold text-gray-200 mb-3 uppercase tracking-wider">Physical Profile</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-background rounded-xl p-4 border border-border/10">
+                  <span className="block text-xs uppercase tracking-wider text-muted mb-1">Gender</span>
+                  <span className="font-medium text-gray-200">{selectedClient.gender || 'N/A'}</span>
+                </div>
+                <div className="bg-background rounded-xl p-4 border border-border/10">
+                  <span className="block text-xs uppercase tracking-wider text-muted mb-1">Date of Birth</span>
+                  <span className="font-medium text-gray-200">{selectedClient.DOB || 'N/A'}</span>
+                </div>
+                <div className="bg-background rounded-xl p-4 border border-border/10">
+                  <span className="block text-xs uppercase tracking-wider text-muted mb-1">Height / Weight</span>
+                  <span className="font-medium text-gray-200">
+                    {selectedClient.height ? `${selectedClient.height} cm` : 'N/A'} / {selectedClient.weight ? `${selectedClient.weight} kg` : 'N/A'}
+                  </span>
+                </div>
+                <div className="bg-primary/10 rounded-xl p-4 border border-primary/20 shadow-sm flex flex-col justify-center">
+                  <span className="block text-xs uppercase tracking-wider text-primary mb-1">Calculated BMI</span>
+                  <span className="font-bold text-primary text-xl">
+                    {calculateBMI(selectedClient.weight, selectedClient.height)}
+                  </span>
+                </div>
+              </div>
             </div>
-          </div>
 
-          <h4 style={{ fontSize: '1rem', color: '#111827', marginBottom: '1rem', borderBottom: '1px solid #e5e7eb', paddingBottom: '0.5rem' }}>
-            Physical Profile
-          </h4>
-          
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
-            <div style={{ backgroundColor: '#f9fafb', padding: '1rem', borderRadius: '0.5rem' }}>
-              <span style={{ display: 'block', fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Gender</span>
-              <span style={{ fontWeight: '500', color: '#111827' }}>{selectedClient.gender || 'N/A'}</span>
+            <div>
+              <h4 className="text-sm font-semibold text-gray-200 mb-3 uppercase tracking-wider">Fitness Goal</h4>
+              <div className="bg-surface rounded-xl p-4 border border-border/10 flex items-center gap-3">
+                <Target className="w-5 h-5 text-primary" />
+                <span className="font-medium text-gray-200">
+                  {selectedClient.goal || 'No specific goal provided.'}
+                </span>
+              </div>
             </div>
-            <div style={{ backgroundColor: '#f9fafb', padding: '1rem', borderRadius: '0.5rem' }}>
-              <span style={{ display: 'block', fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Date of Birth</span>
-              <span style={{ fontWeight: '500', color: '#111827' }}>{selectedClient.DOB || 'N/A'}</span>
-            </div>
-            <div style={{ backgroundColor: '#f9fafb', padding: '1rem', borderRadius: '0.5rem' }}>
-              <span style={{ display: 'block', fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Height / Weight</span>
-              <span style={{ fontWeight: '500', color: '#111827' }}>
-                {selectedClient.height ? `${selectedClient.height} cm` : 'N/A'} / {selectedClient.weight ? `${selectedClient.weight} kg` : 'N/A'}
-              </span>
-            </div>
-            <div style={{ backgroundColor: '#f0fdf4', padding: '1rem', borderRadius: '0.5rem', border: '1px solid #bbf7d0' }}>
-              <span style={{ display: 'block', fontSize: '0.75rem', color: '#166534', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Calculated BMI</span>
-              <span style={{ fontWeight: 'bold', color: '#15803d', fontSize: '1.125rem' }}>
-                {calculateBMI(selectedClient.weight, selectedClient.height)}
-              </span>
-            </div>
-          </div>
-
-          <h4 style={{ fontSize: '1rem', color: '#111827', marginBottom: '1rem', borderBottom: '1px solid #e5e7eb', paddingBottom: '0.5rem' }}>
-            Fitness Goal
-          </h4>
-          <div style={{ backgroundColor: '#eff6ff', padding: '1rem', borderRadius: '0.5rem', border: '1px solid #bfdbfe' }}>
-            <span style={{ fontWeight: '500', color: '#1e40af' }}>
-              {selectedClient.goal || 'No specific goal provided.'}
-            </span>
           </div>
         </Modal>
       )}

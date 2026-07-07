@@ -1,15 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
+import { Eye, FileText, CheckCircle, XCircle } from 'lucide-react';
 
 import { adminApi } from '../../services/admin/adminApi';
 import { useAdminStore } from '../../stores/adminStore';
 
-import PageHeader from '../../components/admin/PageHeader';
+import { PageHeader } from '../../components/ui/LayoutComponents';
 import DataTable from '../../components/admin/DataTable';
-import Modal from '../../components/admin/Modal';
-import ConfirmDialog from '../../components/admin/ConfirmDialog';
-import StatusBadge from '../../components/admin/StatusBadge';
+import Modal from '../../components/ui/Modal';
+import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
+import Avatar from '../../components/ui/Avatar';
+import { cn } from '../../utils/cn';
 
 const Trainers = () => {
   const { trainers, setTrainers } = useAdminStore();
@@ -31,7 +33,6 @@ const Trainers = () => {
     try {
       setIsLoading(true);
       const res = await adminApi.getTrainers();
-      // Assume API returns { data: [...] } or just an array
       setTrainers(res.data || res || []);
     } catch (error) {
       toast.error('Failed to fetch trainers');
@@ -69,7 +70,6 @@ const Trainers = () => {
     }
   };
 
-  // Filter data
   const filteredTrainers = trainers.filter(trainer => {
     if (filter === 'ALL') return true;
     return trainer.approval_status === filter;
@@ -80,15 +80,11 @@ const Trainers = () => {
       header: 'Trainer', 
       accessor: 'name',
       render: (row) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <img 
-            src={row.profile_image || 'https://via.placeholder.com/40'} 
-            alt={row.first_name} 
-            style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} 
-          />
+        <div className="flex items-center gap-3">
+          <Avatar image={row.profile_image} name={`${row.first_name} ${row.last_name}`} size="md" />
           <div>
-            <div style={{ fontWeight: '500', color: '#111827' }}>{row.first_name} {row.last_name}</div>
-            <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{row.user?.email || 'No email'}</div>
+            <div className="font-medium text-gray-100">{row.first_name} {row.last_name}</div>
+            <div className="text-xs text-muted">{row.user?.email || 'No email'}</div>
           </div>
         </div>
       )
@@ -102,16 +98,25 @@ const Trainers = () => {
     { 
       header: 'Status', 
       accessor: 'approval_status',
-      render: (row) => <StatusBadge status={row.approval_status} />
+      render: (row) => (
+        <Badge variant={
+          row.approval_status === 'APPROVED' ? 'success' :
+          row.approval_status === 'PENDING' ? 'warning' :
+          row.approval_status === 'REJECTED' ? 'danger' : 'secondary'
+        }>
+          {row.approval_status}
+        </Badge>
+      )
     },
     {
       header: 'Actions',
       accessor: 'actions',
       render: (row) => (
         <button 
-          onClick={() => handleViewProfile(row)}
-          style={{ color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '500' }}
+          onClick={(e) => { e.stopPropagation(); handleViewProfile(row); }}
+          className="flex items-center gap-1 text-primary hover:text-primary-hover transition-colors font-medium text-sm"
         >
+          <Eye className="w-4 h-4" />
           Review
         </button>
       )
@@ -119,29 +124,24 @@ const Trainers = () => {
   ];
 
   return (
-    <div>
+    <div className="py-6 space-y-6">
       <PageHeader 
         title="Trainer Management" 
         description="Review applications and manage active trainers."
       />
 
       {/* Filter Pills */}
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
+      <div className="flex gap-2 mb-6">
         {['ALL', 'PENDING', 'APPROVED', 'REJECTED'].map(status => (
           <button
             key={status}
             onClick={() => setFilter(status)}
-            style={{
-              padding: '0.5rem 1rem',
-              borderRadius: '9999px',
-              fontSize: '0.875rem',
-              fontWeight: '500',
-              cursor: 'pointer',
-              border: filter === status ? '1px solid #2563eb' : '1px solid #e5e7eb',
-              backgroundColor: filter === status ? '#eff6ff' : '#ffffff',
-              color: filter === status ? '#1d4ed8' : '#4b5563',
-              transition: 'all 0.2s'
-            }}
+            className={cn(
+              "px-4 py-2 rounded-full text-sm font-medium transition-all duration-200",
+              filter === status 
+                ? "bg-primary/20 text-primary border-primary/50 border" 
+                : "bg-surface text-muted border-border/10 border hover:bg-surface-hover"
+            )}
           >
             {status.charAt(0) + status.slice(1).toLowerCase()}
           </button>
@@ -161,93 +161,122 @@ const Trainers = () => {
           isOpen={isViewModalOpen} 
           onClose={() => setIsViewModalOpen(false)} 
           title="Review Trainer Application"
+          maxWidth="md"
         >
-          <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1.5rem' }}>
-            <img 
-              src={selectedTrainer.profile_image || 'https://via.placeholder.com/80'} 
-              alt="Profile" 
-              style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover' }} 
-            />
+          <div className="space-y-6">
+            <div className="flex items-center gap-6">
+              <Avatar 
+                image={selectedTrainer.profile_image} 
+                name={`${selectedTrainer.first_name} ${selectedTrainer.last_name}`} 
+                size="xl" 
+                className="border-2 border-primary/20 shadow-md"
+              />
+              <div>
+                <h3 className="text-xl font-bold text-gray-100 mb-1">
+                  {selectedTrainer.first_name} {selectedTrainer.last_name}
+                </h3>
+                <p className="text-sm text-muted mb-3">
+                  {selectedTrainer.user?.email} • {selectedTrainer.phone}
+                </p>
+                <Badge variant={
+                  selectedTrainer.approval_status === 'APPROVED' ? 'success' :
+                  selectedTrainer.approval_status === 'PENDING' ? 'warning' :
+                  selectedTrainer.approval_status === 'REJECTED' ? 'danger' : 'secondary'
+                }>
+                  {selectedTrainer.approval_status}
+                </Badge>
+              </div>
+            </div>
+
+            <div className="bg-background rounded-xl p-4 border border-border/10 grid grid-cols-2 gap-4">
+              <div>
+                <span className="block text-xs uppercase tracking-wider text-muted mb-1">Specialization</span>
+                <span className="font-medium text-gray-200">{selectedTrainer.specialization?.name || selectedTrainer.specialization_name}</span>
+              </div>
+              <div>
+                <span className="block text-xs uppercase tracking-wider text-muted mb-1">Experience</span>
+                <span className="font-medium text-gray-200">{selectedTrainer.experience} Years</span>
+              </div>
+            </div>
+
             <div>
-              <h3 style={{ margin: '0 0 0.25rem 0', fontSize: '1.25rem', color: '#111827' }}>
-                {selectedTrainer.first_name} {selectedTrainer.last_name}
-              </h3>
-              <p style={{ margin: 0, color: '#6b7280', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-                {selectedTrainer.user?.email} • {selectedTrainer.phone}
-              </p>
-              <StatusBadge status={selectedTrainer.approval_status} />
-            </div>
-          </div>
-
-          <div style={{ backgroundColor: '#f9fafb', padding: '1rem', borderRadius: '0.5rem', marginBottom: '1.5rem' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div>
-                <span style={{ display: 'block', fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Specialization</span>
-                <span style={{ fontWeight: '500', color: '#111827' }}>{selectedTrainer.specialization?.name || selectedTrainer.specialization_name}</span>
-              </div>
-              <div>
-                <span style={{ display: 'block', fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Experience</span>
-                <span style={{ fontWeight: '500', color: '#111827' }}>{selectedTrainer.experience} Years</span>
+              <h4 className="text-sm font-semibold text-gray-200 mb-2">Professional Bio</h4>
+              <div className="bg-background rounded-xl p-4 border border-border/10">
+                <p className="text-sm text-muted leading-relaxed">
+                  {selectedTrainer.bio}
+                </p>
               </div>
             </div>
-          </div>
 
-          <div style={{ marginBottom: '1.5rem' }}>
-            <h4 style={{ fontSize: '0.875rem', color: '#374151', marginBottom: '0.5rem', fontWeight: '600' }}>Professional Bio</h4>
-            <p style={{ color: '#4b5563', fontSize: '0.875rem', lineHeight: '1.6', backgroundColor: '#f9fafb', padding: '1rem', borderRadius: '0.5rem', margin: 0 }}>
-              {selectedTrainer.bio}
-            </p>
-          </div>
+            {selectedTrainer.certificate && (
+              <div>
+                <h4 className="text-sm font-semibold text-gray-200 mb-2">Certification</h4>
+                <a 
+                  href={selectedTrainer.certificate} 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 text-primary hover:text-primary-hover transition-colors font-medium text-sm"
+                >
+                  <FileText className="w-5 h-5" />
+                  View PDF Certificate
+                </a>
+              </div>
+            )}
 
-          {selectedTrainer.certificate && (
-            <div style={{ marginBottom: '2rem' }}>
-              <h4 style={{ fontSize: '0.875rem', color: '#374151', marginBottom: '0.5rem', fontWeight: '600' }}>Certification</h4>
-              <a 
-                href={selectedTrainer.certificate} 
-                target="_blank" 
-                rel="noreferrer"
-                style={{ color: '#2563eb', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-              >
-                📄 View PDF Certificate
-              </a>
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-3 pt-6 border-t border-border/10">
+              {selectedTrainer.approval_status !== 'REJECTED' && (
+                <Button 
+                  variant="danger"
+                  className="bg-danger/10 text-danger hover:bg-danger/20"
+                  onClick={() => handleStatusChange(selectedTrainer, 'REJECTED')}
+                >
+                  <XCircle className="w-4 h-4 mr-2" />
+                  Reject
+                </Button>
+              )}
+              {selectedTrainer.approval_status !== 'APPROVED' && (
+                <Button 
+                  variant="primary" 
+                  className="bg-green-600 hover:bg-green-700 shadow-green-600/20"
+                  onClick={() => handleStatusChange(selectedTrainer, 'APPROVED')}
+                >
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Approve
+                </Button>
+              )}
             </div>
-          )}
-
-          {/* Action Buttons */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', borderTop: '1px solid #e5e7eb', paddingTop: '1.5rem' }}>
-            {selectedTrainer.approval_status !== 'APPROVED' && (
-              <Button 
-                variant="primary" 
-                onClick={() => handleStatusChange(selectedTrainer, 'APPROVED')}
-                style={{ backgroundColor: '#16a34a', borderColor: '#16a34a' }}
-              >
-                Approve
-              </Button>
-            )}
-            {selectedTrainer.approval_status !== 'REJECTED' && (
-              <Button 
-                variant="primary" 
-                onClick={() => handleStatusChange(selectedTrainer, 'REJECTED')}
-                style={{ backgroundColor: '#ef4444', borderColor: '#ef4444' }}
-              >
-                Reject
-              </Button>
-            )}
           </div>
         </Modal>
       )}
 
       {/* Action Confirmation */}
-      <ConfirmDialog 
+      <Modal
         isOpen={isActionModalOpen}
         onClose={() => setIsActionModalOpen(false)}
-        onConfirm={confirmStatusChange}
         title="Confirm Status Change"
-        message={`Are you sure you want to mark this trainer as ${actionTrainer?.newStatus}?`}
-        confirmText="Confirm Change"
-        isDestructive={actionTrainer?.newStatus === 'REJECTED'}
-        isLoading={isSubmitting}
-      />
+        maxWidth="sm"
+      >
+        <div className="space-y-6">
+          <p className="text-gray-300">
+            Are you sure you want to mark this trainer as <strong className="text-white">{actionTrainer?.newStatus}</strong>?
+          </p>
+          <div className="flex justify-end gap-3 pt-4 border-t border-border/10">
+            <Button type="button" variant="secondary" onClick={() => setIsActionModalOpen(false)} disabled={isSubmitting}>
+              Cancel
+            </Button>
+            <Button 
+              type="button" 
+              variant={actionTrainer?.newStatus === 'REJECTED' ? 'danger' : 'primary'} 
+              className={actionTrainer?.newStatus === 'APPROVED' ? 'bg-green-600 hover:bg-green-700 shadow-green-600/20' : ''}
+              onClick={confirmStatusChange} 
+              isLoading={isSubmitting}
+            >
+              Confirm Change
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
