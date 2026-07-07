@@ -1,9 +1,9 @@
 import React from 'react';
-import { Outlet, Link, useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { useClientStore } from '../stores/clientStore';
 import { authApi } from '../services/auth/authApi';
-import Avatar from '../components/ui/Avatar';
+import Navbar from '../components/layout/Navbar';
 import toast from 'react-hot-toast';
 
 const ClientLayout = () => {
@@ -23,58 +23,24 @@ const ClientLayout = () => {
     }
   };
 
+  const navLinks = [
+    { label: 'Home', path: '/client/home' },
+    { label: 'My Profile', path: '/client/profile' }
+  ];
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
-      {/* Navbar */}
-      <header style={{ 
-        backgroundColor: '#ffffff', 
-        borderBottom: '1px solid #e5e7eb',
-        padding: '1rem 2rem',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        position: 'sticky',
-        top: 0,
-        zIndex: 10
-      }}>
-        {/* Logo Area */}
-        <Link to="/client/home" style={{ textDecoration: 'none', color: '#111827', fontWeight: 'bold', fontSize: '1.5rem' }}>
-          FitNexa <span style={{ color: '#2563eb' }}>Client</span>
-        </Link>
-        
-        {/* Navigation Links */}
-        <nav style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-          <Link to="/client/home" style={{ textDecoration: 'none', color: '#4b5563', fontWeight: '500' }}>
-            Home
-          </Link>
-          <Link to="/client/profile" style={{ textDecoration: 'none', color: '#4b5563', fontWeight: '500' }}>
-            My Profile
-          </Link>
-          
-          <button 
-            onClick={handleLogout}
-            style={{ 
-              background: 'none', 
-              border: 'none', 
-              color: '#ef4444', 
-              fontWeight: '500', 
-              cursor: 'pointer',
-              padding: '0.5rem'
-            }}
-          >
-            Logout
-          </button>
-          
-          {/* Avatar Profile Link */}
-          <Link to="/client/profile" style={{ textDecoration: 'none' }}>
-            <Avatar 
-              image={profile?.profile_image} 
-              name={profile?.first_name || 'Client'} 
-              size="sm" 
-            />
-          </Link>
-        </nav>
-      </header>
+      <Navbar 
+        logoText="Client"
+        logoPath="/client/home"
+        links={navLinks}
+        profilePath="/client/profile"
+        profileData={{
+          image: profile?.profile_image,
+          name: profile?.first_name || 'Client'
+        }}
+        onLogout={handleLogout}
+      />
 
       {/* Main Content Area */}
       <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem' }}>

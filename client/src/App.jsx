@@ -18,6 +18,10 @@ import ProfileSetup from './pages/client/ProfileSetup';
 import Home from './pages/client/Home';
 import EditProfile from './pages/client/EditProfile';
 import TrainerLayout from './layouts/TrainerLayout';
+import TrainerOnboarding from './pages/trainer/Onboarding';
+import TrainerPending from './pages/trainer/Pending';
+import TrainerHome from './pages/trainer/Home';
+import TrainerEditProfile from './pages/trainer/EditProfile';
 import AdminLayout from './layouts/AdminLayout';
 
 // --- Placeholder Pages (To be built later) ---
@@ -77,9 +81,10 @@ function App() {
         {/* TRAINER ROUTES (Protected) */}
         <Route element={<ProtectedRoute allowedRoles={['TRAINER']} />}>
           <Route path="/trainer" element={<TrainerLayout />}>
-            <Route path="onboarding" element={<Placeholder title="Trainer Onboarding" />} />
-            <Route path="pending" element={<Placeholder title="Trainer Pending" />} />
-            <Route path="profile" element={<Placeholder title="Trainer Profile" />} />
+            <Route path="onboarding" element={<TrainerOnboarding />} />
+            <Route path="pending" element={<TrainerPending />} />
+            <Route path="home" element={<TrainerHome />} />
+            <Route path="profile" element={<TrainerEditProfile />} />
           </Route>
         </Route>
 
