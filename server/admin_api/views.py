@@ -97,3 +97,53 @@ class AdminSpecializationRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDes
     serializer_class = AdminSpecializationSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
     lookup_field = 'id'
+
+from .serializers import AdminClientListSerializer, AdminClientDetailSerializer
+from .services import list_clients, get_client_detail
+
+class AdminClientListAPIView(APIView):
+    """
+    GET /api/admin/clients/
+    List all clients.
+    """
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get(self, request):
+        clients = list_clients()
+        serializer = AdminClientListSerializer(clients, many=True)
+        return Response(
+            {
+                "success": True,
+                "data": serializer.data
+            },
+            status=status.HTTP_200_OK
+        )
+
+class AdminClientDetailAPIView(APIView):
+    """
+    GET /api/admin/clients/<id>/
+    Retrieve a specific client profile with BMI dynamically calculated.
+    """
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get(self, request, id):
+        try:
+            result = get_client_detail(id)
+        except Exception as e:
+            return Response(
+                {"success": False, "message": str(e)},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = AdminClientDetailSerializer(result["profile"])
+        data = serializer.data
+        data["bmi"] = result["bmi"]
+        data["bmi_category"] = result["bmi_category"]
+
+        return Response(
+            {
+                "success": True,
+                "data": data
+            },
+            status=status.HTTP_200_OK
+        )
