@@ -15,6 +15,8 @@ import Signup from './pages/auth/Signup';
 import VerifyOTP from './pages/auth/VerifyOTP';
 import ClientLayout from './layouts/ClientLayout';
 import ProfileSetup from './pages/client/ProfileSetup';
+import Home from './pages/client/Home';
+import EditProfile from './pages/client/EditProfile';
 import TrainerLayout from './layouts/TrainerLayout';
 import AdminLayout from './layouts/AdminLayout';
 
@@ -67,8 +69,8 @@ function App() {
         <Route element={<ProtectedRoute allowedRoles={['CLIENT']} />}>
           <Route path="/client" element={<ClientLayout />}>
             <Route path="setup" element={<ProfileSetup />} />
-            <Route path="home" element={<Placeholder title="Client Home" />} />
-            <Route path="profile" element={<Placeholder title="Client Profile" />} />
+            <Route path="home" element={<Home />} />
+            <Route path="profile" element={<EditProfile />} />
           </Route>
         </Route>
 

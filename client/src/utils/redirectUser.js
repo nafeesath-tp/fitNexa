@@ -1,23 +1,24 @@
-export function getHomeRoute(user) {
+export const getHomeRoute = (user) => {
     if (!user) return '/login';
-
+    
     switch (user.role) {
-        case 'ADMIN':
-            return '/admin/dashboard';
-        
-        case 'TRAINER':
-            if (user.approval_status === 'PENDING' || user.approval_status === 'REJECTED') {
-                return '/trainer/pending';
-            }
-            return '/trainer/profile'; // Or trainer dashboard if one exists
-        
         case 'CLIENT':
-            if (!user.is_profile_completed) {
-                return '/client/profile/setup';
+            if (user.is_profile_completed === false) {
+                return '/client/setup';
             }
             return '/client/home';
+            
+        case 'TRAINER':
+            if (user.approval_status === 'APPROVED') {
+                return '/trainer/home';
+            }
+            // If they are PENDING or REJECTED or haven't onboarded yet
+            return '/trainer/pending';
+            
+        case 'ADMIN':
+            return '/admin/dashboard';
             
         default:
             return '/login';
     }
-}
+};
