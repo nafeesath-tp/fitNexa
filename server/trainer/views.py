@@ -51,7 +51,9 @@ class TrainerOnboardingAPIView(APIView):
                     },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            except Exception:
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
                 return Response(
                     {
                         "success": False,
