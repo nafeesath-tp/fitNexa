@@ -312,3 +312,49 @@ class ResetPasswordAPIView(APIView):
             },
             status=status.HTTP_400_BAD_REQUEST,
         )
+
+
+class MeAPIView(APIView):
+    """
+    GET /api/auth/me/
+
+    Returns the authenticated user's identity from the HttpOnly JWT cookie.
+    Used by the React frontend to restore session state (e.g. Zustand store)
+    after a page refresh without requiring the user to log in again.
+
+    Response varies by role:
+    - CLIENT  : email, role, is_profile_completed flag
+    - TRAINER : email, role, approval_status from TrainerProfile
+    - ADMIN   : email, role
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        data = {
+            "email": user.email,
+            "role": user.role,
+        }
+
+        # Attach role-specific fields without extra DB queries where possible
+        if user.role == "TRAINER":
+            try:
+                data["approval_status"] = user.trainer_profile.approval_status
+            except Exception:
+                data["approval_status"] = None
+
+        elif user.role == "CLIENT":
+            try:
+                data["is_profile_completed"] = user.client_profile.is_profile_completed
+            except Exception:
+                data["is_profile_completed"] = False
+
+        return Response(
+            {
+                "success": True,
+                "message": "Authenticated user retrieved.",
+                "data": data,
+            },
+            status=status.HTTP_200_OK,
+        )
