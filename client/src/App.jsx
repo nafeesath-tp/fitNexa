@@ -5,7 +5,7 @@ import { useAuthStore } from './stores/authStore';
 import { authApi } from './services/auth/authApi';
 
 // Components & Layouts
-import LoadingScreen from './components/LoadingScreen';
+import PageLoader from './components/ui/PageLoader';
 import ProtectedRoute from './routes/ProtectedRoute';
 import PublicRoute from './routes/PublicRoute';
 import ClientLayout from './layouts/ClientLayout';
@@ -39,7 +39,7 @@ function App() {
   }, []);
 
   if (isLoading) {
-    return <LoadingScreen />;
+    return <PageLoader />;
   }
 
   return (
