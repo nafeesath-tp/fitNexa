@@ -1,33 +1,35 @@
-import React, { forwardRef } from 'react';
-import FormError from './FormError';
-import './ui.css';
+import React from 'react';
+import { cn } from '../../utils/cn';
 
-const RadioGroup = forwardRef(({ label, error, options = [], name, onChange, value, className = '', ...props }, ref) => {
+const RadioGroup = ({ children, className }) => {
   return (
-    <div className={`input-wrapper ${className}`}>
-      {label && <label className="input-label">{label}</label>}
-      <div style={{ display: 'flex', gap: '1rem', marginTop: '0.25rem' }}>
-        {options.map((opt) => (
-          <label key={opt.value} style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', fontSize: '0.95rem' }}>
-            <input
-              type="radio"
-              ref={ref}
-              name={name}
-              value={opt.value}
-              checked={value === opt.value}
-              onChange={onChange}
-              style={{ marginRight: '0.5rem', cursor: 'pointer' }}
-              {...props}
-            />
-            {opt.label}
-          </label>
-        ))}
-      </div>
-      <FormError message={error} />
+    <div className={cn("grid grid-cols-2 gap-3 sm:grid-cols-3", className)}>
+      {children}
     </div>
+  );
+};
+
+export default RadioGroup;
+
+export const RadioOption = React.forwardRef(({ label, icon: Icon, error, className, ...props }, ref) => {
+  return (
+    <label className={cn(
+      "relative flex cursor-pointer flex-col items-center justify-center rounded-xl border p-4 text-center transition-all duration-200",
+      "hover:bg-surface focus-within:ring-2 focus-within:ring-primary/50",
+      "has-[:checked]:border-primary has-[:checked]:bg-primary/5 has-[:checked]:text-primary",
+      error ? "border-danger text-danger" : "border-border/10 text-muted",
+      className
+    )}>
+      <input
+        type="radio"
+        ref={ref}
+        className="sr-only"
+        {...props}
+      />
+      {Icon && <Icon className="mb-2 h-6 w-6" />}
+      <span className="text-sm font-medium">{label}</span>
+    </label>
   );
 });
 
-RadioGroup.displayName = 'RadioGroup';
-
-export default RadioGroup;
+RadioOption.displayName = 'RadioOption';

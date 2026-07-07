@@ -1,17 +1,11 @@
 import React from 'react';
 import Loader from './Loader';
+import { cn } from '../../utils/cn';
 
-const PageLoader = () => {
+const PageLoader = ({ className }) => {
   return (
-    <div style={{
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      minHeight: '100vh',
-      width: '100%',
-      backgroundColor: '#f9fafb'
-    }}>
-      <Loader size="3rem" />
+    <div className={cn("flex min-h-screen items-center justify-center bg-background", className)}>
+      <Loader size={40} />
     </div>
   );
 };

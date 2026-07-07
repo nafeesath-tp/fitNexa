@@ -1,49 +1,33 @@
 import React from 'react';
+import { cn } from '../../utils/cn';
 
-const Avatar = ({ image, name = '', size = 'md', style = {} }) => {
-  // Sizes mapping for consistency
-  const sizeMap = {
-    sm: '32px',
-    md: '48px',
-    lg: '64px',
-    xl: '96px'
+const Avatar = ({ image, name = '', size = 'md', className }) => {
+  const sizes = {
+    sm: 'h-8 w-8 text-xs',
+    md: 'h-12 w-12 text-sm',
+    lg: 'h-16 w-16 text-lg',
+    xl: 'h-24 w-24 text-xl'
   };
 
-  const pxSize = sizeMap[size] || sizeMap.md;
   const initial = name ? name.charAt(0).toUpperCase() : '?';
 
-  const containerStyle = {
-    width: pxSize,
-    height: pxSize,
-    borderRadius: '50%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#e5e7eb', // gray-200
-    color: '#4b5563', // gray-600
-    fontSize: size === 'sm' ? '0.875rem' : size === 'lg' ? '1.5rem' : size === 'xl' ? '2rem' : '1.25rem',
-    fontWeight: '600',
-    overflow: 'hidden',
-    flexShrink: 0,
-    ...style
-  };
-
-  if (image && typeof image === 'string') {
-    return (
-      <div style={containerStyle}>
+  return (
+    <div 
+      className={cn(
+        "relative flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface text-gray-200 shadow-sm border border-border/10",
+        sizes[size],
+        className
+      )}
+    >
+      {image && typeof image === 'string' ? (
         <img 
           src={image} 
           alt={name} 
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+          className="h-full w-full object-cover"
         />
-      </div>
-    );
-  }
-
-  // Fallback to initial
-  return (
-    <div style={containerStyle}>
-      {initial}
+      ) : (
+        <span className="font-semibold">{initial}</span>
+      )}
     </div>
   );
 };

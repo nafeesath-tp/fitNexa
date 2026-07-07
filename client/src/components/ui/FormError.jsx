@@ -1,11 +1,18 @@
 import React from 'react';
+import { cn } from '../../utils/cn';
 
-const FormError = ({ message }) => {
+const FormError = ({ error, className }) => {
+  if (!error) return null;
+  
+  // Handle both string errors and React Hook Form error objects
+  const message = typeof error === 'string' ? error : error.message;
+  
   if (!message) return null;
+
   return (
-    <span style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '0.25rem', display: 'block' }}>
+    <p className={cn("mt-1 text-sm text-danger", className)}>
       {message}
-    </span>
+    </p>
   );
 };
 

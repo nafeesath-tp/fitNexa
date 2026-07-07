@@ -1,21 +1,21 @@
-import React, { forwardRef } from 'react';
-import FormError from './FormError';
-import './ui.css';
+import React from 'react';
+import { cn } from '../../utils/cn';
 
-const Input = forwardRef(({ label, error, className = '', ...props }, ref) => {
+const Input = React.forwardRef(({ className, error, ...props }, ref) => {
   return (
-    <div className="input-wrapper">
-      {label && <label className="input-label">{label}</label>}
-      <input
-        ref={ref}
-        className={`input-field ${error ? 'error' : ''} ${className}`}
-        {...props}
-      />
-      <FormError message={error} />
-    </div>
+    <input
+      ref={ref}
+      className={cn(
+        "flex h-11 w-full rounded-lg border border-border/10 bg-background px-3 py-2 text-sm text-gray-100 placeholder:text-muted transition-all duration-200",
+        "focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary",
+        "disabled:cursor-not-allowed disabled:opacity-50",
+        error && "border-danger focus:ring-danger/50 focus:border-danger",
+        className
+      )}
+      {...props}
+    />
   );
 });
 
 Input.displayName = 'Input';
-
 export default Input;

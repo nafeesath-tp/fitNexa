@@ -1,44 +1,43 @@
-import React, { forwardRef, useState } from 'react';
-import FormError from './FormError';
-import './ui.css';
+import React, { useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
+import { cn } from '../../utils/cn';
 
-const PasswordInput = forwardRef(({ label, error, className = '', ...props }, ref) => {
+const PasswordInput = React.forwardRef(({ className, error, ...props }, ref) => {
   const [showPassword, setShowPassword] = useState(false);
 
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
   return (
-    <div className="input-wrapper">
-      {label && <label className="input-label">{label}</label>}
-      <div style={{ position: 'relative' }}>
-        <input
-          ref={ref}
-          type={showPassword ? 'text' : 'password'}
-          className={`input-field ${error ? 'error' : ''} ${className}`}
-          style={{ paddingRight: '2.5rem' }}
-          {...props}
-        />
-        <button
-          type="button"
-          onClick={() => setShowPassword(!showPassword)}
-          style={{
-            position: 'absolute',
-            right: '0.75rem',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            color: '#6b7280',
-            fontSize: '0.875rem'
-          }}
-        >
-          {showPassword ? 'Hide' : 'Show'}
-        </button>
-      </div>
-      <FormError message={error} />
+    <div className="relative">
+      <input
+        type={showPassword ? 'text' : 'password'}
+        ref={ref}
+        className={cn(
+          "flex h-11 w-full rounded-lg border border-border/10 bg-background px-3 py-2 text-sm text-gray-100 placeholder:text-muted transition-all duration-200",
+          "focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary pr-10",
+          "disabled:cursor-not-allowed disabled:opacity-50",
+          error && "border-danger focus:ring-danger/50 focus:border-danger",
+          className
+        )}
+        {...props}
+      />
+      <button
+        type="button"
+        onClick={togglePasswordVisibility}
+        className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted hover:text-gray-200 focus:outline-none transition-colors"
+        tabIndex="-1"
+      >
+        {showPassword ? (
+          <EyeOff size={18} />
+        ) : (
+          <Eye size={18} />
+        )}
+      </button>
     </div>
   );
 });
 
 PasswordInput.displayName = 'PasswordInput';
-
 export default PasswordInput;
