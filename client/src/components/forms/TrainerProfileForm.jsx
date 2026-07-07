@@ -4,11 +4,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { trainerProfileSchema } from '../../validation/trainerProfileSchema';
 import { trainerApi } from '../../services/trainer/trainerApi';
 import toast from 'react-hot-toast';
+import { FileBadge, Briefcase } from 'lucide-react';
 
 import Input from '../ui/Input';
 import Button from '../ui/Button';
 import Select from '../ui/Select';
-import FormError from '../ui/FormError';
+import { FormField, FormLabel, FormError, FormSection } from '../ui/Form';
+import { Card, CardContent } from '../ui/Card';
 
 const TrainerProfileForm = ({ initialValues = {}, onSubmit, isLoading, isEditMode = false }) => {
   const [step, setStep] = useState(1);
@@ -19,11 +21,7 @@ const TrainerProfileForm = ({ initialValues = {}, onSubmit, isLoading, isEditMod
       try {
         const response = await trainerApi.getSpecializations();
         if (response.success) {
-          const formattedSpecs = response.data.map(spec => ({
-            label: spec.name,
-            value: spec.id
-          }));
-          setSpecializations(formattedSpecs);
+          setSpecializations(response.data);
         }
       } catch (error) {
         toast.error('Failed to load specializations');
@@ -54,144 +52,176 @@ const TrainerProfileForm = ({ initialValues = {}, onSubmit, isLoading, isEditMod
   };
 
   return (
-    <div style={{ maxWidth: '600px', margin: '0 auto', width: '100%' }}>
-      <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
-        <h2 style={{ fontSize: '2rem', fontWeight: 'bold', color: '#111827' }}>
+    <div className="w-full max-w-2xl mx-auto">
+      <div className="mb-8 text-center">
+        <h2 className="text-3xl font-bold text-gray-100 mb-2">
           {isEditMode ? 'Edit Profile' : 'Trainer Onboarding'}
         </h2>
-        <p style={{ color: '#6b7280' }}>Step {step} of 2</p>
+        <p className="text-muted">Step {step} of 2</p>
         
         {/* Progress Bar */}
-        <div style={{ width: '100%', backgroundColor: '#e5e7eb', height: '8px', borderRadius: '4px', marginTop: '1rem' }}>
-          <div style={{ 
-            width: `${(step / 2) * 100}%`, 
-            backgroundColor: '#2563eb', 
-            height: '100%', 
-            borderRadius: '4px',
-            transition: 'width 0.3s ease'
-          }}></div>
+        <div className="w-full bg-surface h-2 rounded-full mt-4 overflow-hidden border border-border/10">
+          <div 
+            className="bg-primary h-full rounded-full transition-all duration-300 ease-out"
+            style={{ width: `${(step / 2) * 100}%` }}
+          />
         </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="auth-card" style={{ maxWidth: '100%' }}>
-        
-        {/* STEP 1: Personal Info */}
-        {step === 1 && (
-          <div>
-            <h3 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', fontWeight: '600' }}>Personal Information</h3>
-            <div style={{ display: 'flex', gap: '1rem' }}>
-              <Input 
-                label="First Name *" 
-                placeholder="Jane" 
-                {...register('first_name')} 
-                error={errors.first_name?.message} 
-              />
-              <Input 
-                label="Last Name *" 
-                placeholder="Doe" 
-                {...register('last_name')} 
-                error={errors.last_name?.message} 
-              />
-            </div>
+      <Card>
+        <CardContent className="pt-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             
-            <Input 
-              label="Phone Number *" 
-              placeholder="+1234567890" 
-              {...register('phone')} 
-              error={errors.phone?.message} 
-            />
+            {/* STEP 1: Personal Info */}
+            {step === 1 && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                <FormSection title="Personal Information" description="Basic details for your profile">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <FormField>
+                      <FormLabel>First Name *</FormLabel>
+                      <Input 
+                        placeholder="Jane" 
+                        {...register('first_name')} 
+                        error={errors.first_name} 
+                      />
+                      <FormError error={errors.first_name} />
+                    </FormField>
+                    
+                    <FormField>
+                      <FormLabel>Last Name *</FormLabel>
+                      <Input 
+                        placeholder="Doe" 
+                        {...register('last_name')} 
+                        error={errors.last_name} 
+                      />
+                      <FormError error={errors.last_name} />
+                    </FormField>
+                  </div>
+                  
+                  <FormField>
+                    <FormLabel>Phone Number *</FormLabel>
+                    <Input 
+                      placeholder="+1234567890" 
+                      {...register('phone')} 
+                      error={errors.phone} 
+                    />
+                    <FormError error={errors.phone} />
+                  </FormField>
 
-            <div className="input-wrapper">
-              <label className="input-label">Profile Image (Optional)</label>
-              <input 
-                type="file" 
-                accept="image/jpeg, image/png, image/webp"
-                {...register('profile_image')}
-                style={{ marginTop: '0.5rem' }}
-              />
-              <FormError message={errors.profile_image?.message} />
+                  <FormField>
+                    <FormLabel>Profile Image (Optional)</FormLabel>
+                    <input 
+                      type="file" 
+                      accept="image/jpeg, image/png, image/webp"
+                      className="block w-full text-sm text-gray-300
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded-full file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-primary/10 file:text-primary
+                        hover:file:bg-primary/20
+                        cursor-pointer"
+                      {...register('profile_image')}
+                    />
+                    <FormError error={errors.profile_image} />
+                    
+                    {isEditMode && initialValues.profile_image && typeof initialValues.profile_image === 'string' && (
+                      <p className="text-sm text-muted mt-2">
+                        Current image: <a href={initialValues.profile_image} target="_blank" rel="noreferrer" className="text-primary hover:underline">View</a>
+                      </p>
+                    )}
+                  </FormField>
+                </FormSection>
+              </div>
+            )}
+
+            {/* STEP 2: Professional Details */}
+            {step === 2 && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                <FormSection title="Professional Details" description="Highlight your expertise">
+                  
+                  <FormField>
+                    <FormLabel>Primary Specialization *</FormLabel>
+                    <Select {...register('specialization')} error={errors.specialization}>
+                      <option value="">Select Specialization</option>
+                      {specializations.map(spec => (
+                        <option key={spec.id} value={spec.id}>{spec.name}</option>
+                      ))}
+                    </Select>
+                    <FormError error={errors.specialization} />
+                  </FormField>
+
+                  <FormField>
+                    <FormLabel>Years of Experience *</FormLabel>
+                    <Input 
+                      type="number"
+                      placeholder="5"
+                      {...register('experience')} 
+                      error={errors.experience} 
+                    />
+                    <FormError error={errors.experience} />
+                  </FormField>
+
+                  <FormField>
+                    <FormLabel>Professional Bio *</FormLabel>
+                    <textarea 
+                      className="flex w-full rounded-lg border border-border/10 bg-background px-3 py-2 text-sm text-gray-100 placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200"
+                      rows="4"
+                      placeholder="Describe your training philosophy and background..."
+                      {...register('bio')}
+                    />
+                    <FormError error={errors.bio} />
+                  </FormField>
+
+                  <FormField>
+                    <FormLabel>Certification Document (PDF Only, Optional for edit)</FormLabel>
+                    <input 
+                      type="file" 
+                      accept="application/pdf"
+                      className="block w-full text-sm text-gray-300
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded-full file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-primary/10 file:text-primary
+                        hover:file:bg-primary/20
+                        cursor-pointer"
+                      {...register('certificate')}
+                    />
+                    <FormError error={errors.certificate} />
+                    
+                    {isEditMode && initialValues.certificate && typeof initialValues.certificate === 'string' && (
+                      <p className="text-sm text-muted mt-2">
+                        Current certificate: <a href={initialValues.certificate} target="_blank" rel="noreferrer" className="text-primary hover:underline">View</a>
+                      </p>
+                    )}
+                  </FormField>
+                </FormSection>
+              </div>
+            )}
+
+            {/* Navigation Buttons */}
+            <div className="flex justify-between pt-6 border-t border-border/10">
+              {step > 1 ? (
+                <Button type="button" onClick={prevStep} variant="secondary">
+                  Back
+                </Button>
+              ) : (
+                <div /> // Spacer
+              )}
               
-              {isEditMode && initialValues.profile_image && typeof initialValues.profile_image === 'string' && (
-                <p style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '0.5rem' }}>
-                  Current image: <a href={initialValues.profile_image} target="_blank" rel="noreferrer">View</a>
-                </p>
+              {step < 2 ? (
+                <Button type="button" onClick={nextStep}>
+                  Next Step
+                </Button>
+              ) : (
+                <Button type="submit" isLoading={isLoading}>
+                  {isEditMode ? 'Save Changes' : 'Submit Application'}
+                </Button>
               )}
             </div>
-          </div>
-        )}
-
-        {/* STEP 2: Professional Details */}
-        {step === 2 && (
-          <div>
-            <h3 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', fontWeight: '600' }}>Professional Details</h3>
             
-            <Select 
-              label="Primary Specialization *" 
-              options={[{ label: 'Select Specialization', value: '' }, ...specializations]}
-              {...register('specialization')} 
-              error={errors.specialization?.message} 
-            />
-
-            <Input 
-              label="Years of Experience *" 
-              type="number"
-              placeholder="5"
-              {...register('experience')} 
-              error={errors.experience?.message} 
-            />
-
-            <div className="input-wrapper" style={{ marginTop: '1rem' }}>
-              <label className="input-label">Professional Bio *</label>
-              <textarea 
-                className="input-field"
-                rows="4"
-                placeholder="Describe your training philosophy and background..."
-                {...register('bio')}
-              ></textarea>
-              <FormError message={errors.bio?.message} />
-            </div>
-
-            <div className="input-wrapper" style={{ marginTop: '1rem' }}>
-              <label className="input-label">Certification Document (PDF Only, Optional for edit)</label>
-              <input 
-                type="file" 
-                accept="application/pdf"
-                {...register('certificate')}
-                style={{ marginTop: '0.5rem' }}
-              />
-              <FormError message={errors.certificate?.message} />
-              
-              {isEditMode && initialValues.certificate && typeof initialValues.certificate === 'string' && (
-                <p style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '0.5rem' }}>
-                  Current certificate: <a href={initialValues.certificate} target="_blank" rel="noreferrer">View</a>
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Navigation Buttons */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2rem' }}>
-          {step > 1 ? (
-            <Button type="button" onClick={prevStep} variant="secondary" style={{ width: '48%' }}>
-              Back
-            </Button>
-          ) : (
-            <div></div> // Spacer
-          )}
-          
-          {step < 2 ? (
-            <Button type="button" onClick={nextStep} variant="primary" style={{ width: step > 1 ? '48%' : '100%' }}>
-              Next Step
-            </Button>
-          ) : (
-            <Button type="submit" isLoading={isLoading} variant="primary" style={{ width: '48%' }}>
-              {isEditMode ? 'Save Changes' : 'Submit Application'}
-            </Button>
-          )}
-        </div>
-        
-      </form>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 };

@@ -30,7 +30,6 @@ const Onboarding = () => {
       
       if (response.success) {
         toast.success(response.message || 'Application submitted successfully!');
-        // Update store with approval status (which will be PENDING)
         setProfile({ approval_status: response.data.approval_status });
         navigate('/trainer/pending', { replace: true });
       } else {
@@ -44,7 +43,7 @@ const Onboarding = () => {
   };
 
   return (
-    <div style={{ padding: '2rem', display: 'flex', justifyContent: 'center' }}>
+    <div className="py-12 flex justify-center">
       <TrainerProfileForm 
         onSubmit={onSubmit} 
         isLoading={isLoading} 

@@ -3,7 +3,11 @@ import { useTrainerStore } from '../../stores/trainerStore';
 import { trainerApi } from '../../services/trainer/trainerApi';
 import Avatar from '../../components/ui/Avatar';
 import PageLoader from '../../components/ui/PageLoader';
+import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
+import Button from '../../components/ui/Button';
+import { Container } from '../../components/ui/LayoutComponents';
 import toast from 'react-hot-toast';
+import { Users, CalendarDays, Wallet, Activity } from 'lucide-react';
 
 const Home = () => {
   const { profile, setProfile } = useTrainerStore();
@@ -32,89 +36,103 @@ const Home = () => {
     return <PageLoader />;
   }
 
-  const cardStyle = {
-    backgroundColor: '#ffffff',
-    borderRadius: '0.5rem',
-    padding: '1.5rem',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-    border: '1px solid #e5e7eb',
-    marginBottom: '1.5rem'
-  };
-
   return (
-    <div>
+    <Container className="py-8">
       {/* Welcome Section */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '2rem' }}>
+      <div className="mb-10 flex flex-col md:flex-row md:items-center gap-6 p-8 rounded-2xl bg-surface border border-border/10 shadow-lg relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-8 w-64 h-64 opacity-5 pointer-events-none">
+           <Activity className="w-full h-full text-primary" />
+        </div>
         <Avatar 
           image={profile?.profile_image} 
           name={profile?.first_name || 'Trainer'} 
-          size="lg" 
+          size="xl"
+          className="border-4 border-background shadow-xl" 
         />
-        <div>
-          <h1 style={{ fontSize: '2rem', fontWeight: 'bold', color: '#111827', margin: 0 }}>
-            Welcome, {profile?.first_name}!
+        <div className="relative z-10">
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-100">
+            Welcome, <span className="text-primary">{profile?.first_name}</span>!
           </h1>
-          <p style={{ color: '#6b7280', margin: '0.5rem 0 0 0' }}>
-            Ready for your upcoming sessions?
+          <p className="mt-2 text-lg text-muted max-w-2xl">
+            Ready for your upcoming sessions? Let's empower some clients today.
           </p>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
         {/* Today's Sessions */}
-        <div style={cardStyle}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>Today's Sessions</h2>
-          <div style={{ backgroundColor: '#f3f4f6', height: '100px', borderRadius: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>
-            No sessions scheduled for today
-          </div>
-        </div>
+        <Card className="hover:border-primary/30 transition-colors group">
+          <CardHeader>
+            <div className="flex items-center gap-2 mb-2">
+              <CalendarDays className="h-5 w-5 text-primary group-hover:animate-pulse" />
+              <CardTitle>Today's Sessions</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="h-32 rounded-xl bg-surface border border-dashed border-border/20 flex flex-col items-center justify-center text-muted">
+              <p className="text-sm font-medium">No sessions scheduled for today</p>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Assigned Clients */}
-        <div style={cardStyle}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>Assigned Clients</h2>
-          <div style={{ backgroundColor: '#f3f4f6', height: '100px', borderRadius: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>
-            Client List Placeholder
-          </div>
-        </div>
+        <Card className="hover:border-primary/30 transition-colors group">
+          <CardHeader>
+            <div className="flex items-center gap-2 mb-2">
+              <Users className="h-5 w-5 text-primary group-hover:animate-bounce" />
+              <CardTitle>Assigned Clients</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="h-32 rounded-xl bg-surface border border-dashed border-border/20 flex flex-col items-center justify-center text-muted">
+              <p className="text-sm font-medium">Client List Placeholder</p>
+            </div>
+          </CardContent>
+        </Card>
         
         {/* Upcoming Classes */}
-        <div style={cardStyle}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>Upcoming Classes</h2>
-          <div style={{ backgroundColor: '#f3f4f6', height: '100px', borderRadius: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>
-            Classes Placeholder
-          </div>
-        </div>
+        <Card className="hover:border-primary/30 transition-colors group">
+          <CardHeader>
+            <div className="flex items-center gap-2 mb-2">
+              <Activity className="h-5 w-5 text-primary group-hover:animate-pulse" />
+              <CardTitle>Upcoming Classes</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="h-32 rounded-xl bg-surface border border-dashed border-border/20 flex flex-col items-center justify-center text-muted">
+              <p className="text-sm font-medium">Classes Placeholder</p>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Wallet */}
-        <div style={cardStyle}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>Wallet & Earnings</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: '#4b5563' }}>Available Balance:</span>
-              <span style={{ fontWeight: 'bold', color: '#111827' }}>$0.00</span>
+        <Card className="bg-gradient-to-br from-surface to-background border-primary/20">
+          <CardHeader>
+            <div className="flex items-center gap-2 mb-2">
+              <Wallet className="h-5 w-5 text-primary" />
+              <CardTitle>Wallet & Earnings</CardTitle>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: '#4b5563' }}>Pending Clearance:</span>
-              <span style={{ fontWeight: 'bold', color: '#111827' }}>$0.00</span>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col gap-4">
+              <div className="flex justify-between items-center pb-4 border-b border-border/10">
+                <span className="text-muted">Available Balance:</span>
+                <span className="text-2xl font-bold text-white">$0.00</span>
+              </div>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-muted">Pending Clearance:</span>
+                <span className="font-semibold text-gray-300">$0.00</span>
+              </div>
+              <Button className="w-full shadow-primary/20">
+                Withdraw Funds
+              </Button>
             </div>
-            <button style={{ 
-              marginTop: '1rem',
-              backgroundColor: '#111827', 
-              color: 'white', 
-              border: 'none', 
-              padding: '0.5rem 1rem', 
-              borderRadius: '0.375rem',
-              cursor: 'pointer',
-              fontWeight: '500'
-            }}>
-              Withdraw Funds
-            </button>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
       </div>
-    </div>
+    </Container>
   );
 };
 

@@ -5,6 +5,7 @@ import { trainerApi } from '../../services/trainer/trainerApi';
 import { useTrainerStore } from '../../stores/trainerStore';
 import TrainerProfileForm from '../../components/forms/TrainerProfileForm';
 import PageLoader from '../../components/ui/PageLoader';
+import { Container, PageHeader } from '../../components/ui/LayoutComponents';
 
 const EditProfile = () => {
   const { profile, setProfile } = useTrainerStore();
@@ -20,7 +21,6 @@ const EditProfile = () => {
           if (response.success) {
             setProfile(response.data);
             
-            // Format specialization ID for the form dropdown
             const data = { ...response.data };
             if (data.specialization && typeof data.specialization === 'object') {
               data.specialization = data.specialization.id;
@@ -51,7 +51,6 @@ const EditProfile = () => {
       const formData = new FormData();
       Object.keys(data).forEach(key => {
         if (key === 'profile_image' || key === 'certificate') {
-          // Only append if it's a new FileList with a file
           if (data[key] instanceof FileList && data[key].length > 0) {
             formData.append(key, data[key][0]);
           }
@@ -60,10 +59,6 @@ const EditProfile = () => {
         }
       });
 
-      // We don't have an update endpoint defined in TrainerApi.js yet, let's assume it exists or use onboarding for now.
-      // Usually there is a PATCH endpoint. 
-      // For now, let's assume `trainerApi.submitOnboarding` also handles updates via PATCH on the backend or we add `updateProfile`.
-      // The backend TrainerOnboardingAPIView is POST. Wait, the user didn't ask me to build the trainer Edit Profile backend in this iteration.
       toast.error('Update functionality is under construction.');
       
     } catch (error) {
@@ -78,14 +73,20 @@ const EditProfile = () => {
   }
 
   return (
-    <div style={{ padding: '2rem', display: 'flex', justifyContent: 'center' }}>
-      <TrainerProfileForm 
-        initialValues={initialData}
-        onSubmit={onSubmit} 
-        isLoading={isLoading} 
-        isEditMode={true} 
+    <Container className="py-8">
+      <PageHeader 
+        title="Edit Profile"
+        description="Update your professional details and certifications"
       />
-    </div>
+      <div className="mt-8 flex justify-center">
+        <TrainerProfileForm 
+          initialValues={initialData}
+          onSubmit={onSubmit} 
+          isLoading={isLoading} 
+          isEditMode={true} 
+        />
+      </div>
+    </Container>
   );
 };
 
