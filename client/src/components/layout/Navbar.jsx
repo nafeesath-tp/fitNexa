@@ -11,8 +11,8 @@ const Navbar = ({
   onLogout 
 }) => {
   return (
-    <header className="sticky top-0 z-10 w-full border-b border-border/10 bg-background/80 px-6 py-4 backdrop-blur-md">
-      <div className="mx-auto flex w-full max-w-7xl items-center justify-between">
+    <header className="sticky top-0 z-50 w-full bg-background pt-4">
+      <div className="mx-auto flex w-full max-w-7xl items-center justify-between border-b border-border/50 pb-4 px-4 sm:px-6 lg:px-8">
         {/* Logo Area */}
         <Link to={logoPath} className="flex items-center text-xl font-bold tracking-tight text-white hover:text-primary transition-colors">
           Fit<span className="text-primary">Nexa</span>
@@ -25,12 +25,12 @@ const Navbar = ({
         </Link>
         
         {/* Navigation Links */}
-        <nav className="flex items-center gap-6">
+        <nav className="flex items-center gap-8">
           {links.map((link, idx) => (
             <Link 
               key={idx} 
               to={link.path} 
-              className="text-sm font-medium text-gray-300 hover:text-primary transition-colors"
+              className="text-sm font-medium text-gray-300 hover:text-white transition-colors"
             >
               {link.label}
             </Link>
@@ -39,7 +39,7 @@ const Navbar = ({
           {onLogout && (
             <button 
               onClick={onLogout}
-              className="text-sm font-medium text-danger hover:text-red-400 transition-colors"
+              className="text-sm font-medium text-danger hover:text-red-400 transition-colors ml-4"
             >
               Logout
             </button>
@@ -47,7 +47,7 @@ const Navbar = ({
           
           {/* Avatar Profile Link */}
           {profileData && (
-            <Link to={profilePath} className="ml-2 hover:opacity-80 transition-opacity">
+            <Link to={profilePath} className="ml-4 hover:opacity-80 transition-opacity">
               <Avatar 
                 image={profileData.image} 
                 name={profileData.name || 'User'} 
