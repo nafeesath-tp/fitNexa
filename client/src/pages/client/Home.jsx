@@ -3,7 +3,12 @@ import { useClientStore } from '../../stores/clientStore';
 import { clientApi } from '../../services/client/clientApi';
 import Avatar from '../../components/ui/Avatar';
 import PageLoader from '../../components/ui/PageLoader';
+import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
+import Badge from '../../components/ui/Badge';
+import Button from '../../components/ui/Button';
+import { Container } from '../../components/ui/LayoutComponents';
 import toast from 'react-hot-toast';
+import { Dumbbell, Activity, Calendar, Trophy } from 'lucide-react';
 
 const Home = () => {
   const { profile, setProfile } = useClientStore();
@@ -32,83 +37,84 @@ const Home = () => {
     return <PageLoader />;
   }
 
-  // Placeholder styles
-  const cardStyle = {
-    backgroundColor: '#ffffff',
-    borderRadius: '0.5rem',
-    padding: '1.5rem',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-    border: '1px solid #e5e7eb',
-    marginBottom: '1.5rem'
-  };
-
   return (
-    <div>
+    <Container className="py-8">
       {/* Welcome Section */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '2rem' }}>
+      <div className="mb-10 flex flex-col md:flex-row md:items-center gap-6 p-8 rounded-2xl bg-surface border border-border/10 shadow-lg relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-8 w-64 h-64 opacity-5 pointer-events-none">
+           <Trophy className="w-full h-full text-primary" />
+        </div>
         <Avatar 
           image={profile?.profile_image} 
           name={profile?.first_name || 'Client'} 
-          size="lg" 
+          size="xl"
+          className="border-4 border-background shadow-xl"
         />
-        <div>
-          <h1 style={{ fontSize: '2rem', fontWeight: 'bold', color: '#111827', margin: 0 }}>
-            Welcome back, {profile?.first_name}!
+        <div className="relative z-10">
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-100">
+            Welcome back, <span className="text-primary">{profile?.first_name}</span>!
           </h1>
-          <p style={{ color: '#6b7280', margin: '0.5rem 0 0 0' }}>
-            Ready to crush your {profile?.fitness_goal?.replace('_', ' ').toLowerCase() || 'fitness'} goals today?
+          <p className="mt-2 text-lg text-muted max-w-2xl">
+            Ready to crush your {profile?.fitness_goal?.replace('_', ' ').toLowerCase() || 'fitness'} goals today? Keep pushing your limits!
           </p>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         
         {/* Workout Categories */}
-        <div style={cardStyle}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>Workout Categories</h2>
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-            {['Strength', 'Cardio', 'Yoga', 'HIIT'].map(cat => (
-              <span key={cat} style={{ 
-                backgroundColor: '#eff6ff', 
-                color: '#2563eb', 
-                padding: '0.25rem 0.75rem', 
-                borderRadius: '999px',
-                fontSize: '0.875rem',
-                fontWeight: '500'
-              }}>
-                {cat}
-              </span>
-            ))}
-          </div>
-        </div>
+        <Card className="hover:border-primary/30 transition-colors group">
+          <CardHeader>
+            <div className="flex items-center gap-2 mb-2">
+              <Dumbbell className="h-5 w-5 text-primary group-hover:animate-bounce" />
+              <CardTitle>Workout Categories</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {['Strength', 'Cardio', 'Yoga', 'HIIT', 'Core', 'Mobility'].map(cat => (
+                <Badge key={cat} variant="primary" className="text-sm px-3 py-1">
+                  {cat}
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Featured Programs */}
-        <div style={cardStyle}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>Featured Programs</h2>
-          <div style={{ backgroundColor: '#f3f4f6', height: '100px', borderRadius: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>
-            Programs Placeholder
-          </div>
-        </div>
+        <Card className="hover:border-primary/30 transition-colors group">
+          <CardHeader>
+            <div className="flex items-center gap-2 mb-2">
+              <Activity className="h-5 w-5 text-primary group-hover:animate-pulse" />
+              <CardTitle>Featured Programs</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="h-32 rounded-xl bg-surface border border-dashed border-border/20 flex flex-col items-center justify-center text-muted">
+              <Calendar className="h-8 w-8 mb-2 opacity-50" />
+              <p className="text-sm font-medium">New programs dropping soon</p>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Subscription */}
-        <div style={cardStyle}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>Your Subscription</h2>
-          <p style={{ color: '#4b5563', marginBottom: '1rem' }}>You are currently on the Free Tier.</p>
-          <button style={{ 
-            backgroundColor: '#111827', 
-            color: 'white', 
-            border: 'none', 
-            padding: '0.5rem 1rem', 
-            borderRadius: '0.375rem',
-            cursor: 'pointer',
-            fontWeight: '500'
-          }}>
-            Upgrade Plan
-          </button>
-        </div>
+        <Card className="bg-gradient-to-br from-surface to-background border-primary/20">
+          <CardHeader>
+            <CardTitle>Your Subscription</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="mb-6">
+              <span className="text-3xl font-bold text-white">Free Plan</span>
+              <p className="text-sm text-muted mt-1">Basic features included</p>
+            </div>
+            <Button className="w-full shadow-primary/20">
+              Upgrade to Premium
+            </Button>
+          </CardContent>
+        </Card>
 
       </div>
-    </div>
+    </Container>
   );
 };
 

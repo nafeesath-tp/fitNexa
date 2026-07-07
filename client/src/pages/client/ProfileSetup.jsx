@@ -43,7 +43,7 @@ const ProfileSetup = () => {
   };
 
   return (
-    <div style={{ padding: '2rem', display: 'flex', justifyContent: 'center' }}>
+    <div className="py-12">
       <ProfileForm 
         onSubmit={onSubmit} 
         isLoading={isLoading} 

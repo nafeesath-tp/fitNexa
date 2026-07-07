@@ -5,6 +5,7 @@ import { clientApi } from '../../services/client/clientApi';
 import { useClientStore } from '../../stores/clientStore';
 import ProfileForm from '../../components/forms/ProfileForm';
 import PageLoader from '../../components/ui/PageLoader';
+import { Container, PageHeader } from '../../components/ui/LayoutComponents';
 
 const EditProfile = () => {
   const { profile, setProfile } = useClientStore();
@@ -38,11 +39,9 @@ const EditProfile = () => {
     try {
       setIsLoading(true);
       
-      // Convert to FormData to handle potential image upload
       const formData = new FormData();
       Object.keys(data).forEach(key => {
         if (key === 'profile_image') {
-          // Only append if it's a new FileList with a file
           if (data.profile_image instanceof FileList && data.profile_image.length > 0) {
             formData.append('profile_image', data.profile_image[0]);
           }
@@ -56,7 +55,6 @@ const EditProfile = () => {
       if (response.success) {
         toast.success(response.message || 'Profile updated successfully!');
         setProfile(response.data);
-        // Stay on page
       } else {
         toast.error(response.message || 'Failed to update profile.');
       }
@@ -72,14 +70,20 @@ const EditProfile = () => {
   }
 
   return (
-    <div style={{ padding: '2rem', display: 'flex', justifyContent: 'center' }}>
-      <ProfileForm 
-        initialValues={initialData}
-        onSubmit={onSubmit} 
-        isLoading={isLoading} 
-        isEditMode={true} 
+    <Container className="py-8">
+      <PageHeader 
+        title="Edit Profile"
+        description="Update your personal information and goals"
       />
-    </div>
+      <div className="mt-8 flex justify-center">
+        <ProfileForm 
+          initialValues={initialData}
+          onSubmit={onSubmit} 
+          isLoading={isLoading} 
+          isEditMode={true} 
+        />
+      </div>
+    </Container>
   );
 };
 
