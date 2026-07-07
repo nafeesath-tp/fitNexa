@@ -67,3 +67,80 @@ class EmailOTP(models.Model):
 
     def __str__(self):
         return f"{self.user.email} - {self.purpose}"
+
+
+class Specialization(models.Model):
+    """
+    Managed by Admin via CRUD. Trainers select one during onboarding.
+    """
+
+    name = models.CharField(max_length=100, unique=True)
+
+    description = models.TextField(blank=True)
+
+    is_active = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ["name"]
+
+
+class TrainerProfile(models.Model):
+
+    class ApprovalStatus(models.TextChoices):
+        PENDING = "PENDING", "Pending"
+        APPROVED = "APPROVED", "Approved"
+        REJECTED = "REJECTED", "Rejected"
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="trainer_profile",
+    )
+
+    first_name = models.CharField(max_length=100)
+
+    last_name = models.CharField(max_length=100)
+
+    phone = models.CharField(max_length=15)
+
+    bio = models.TextField()
+
+    experience = models.PositiveIntegerField(
+        help_text="Years of experience"
+    )
+
+    specialization = models.ForeignKey(
+        Specialization,
+        on_delete=models.PROTECT,
+        related_name="trainers",
+    )
+
+    profile_image = models.ImageField(
+        upload_to="trainer/profiles/",
+        blank=True,
+        null=True,
+    )
+
+    certificate = models.FileField(
+        upload_to="trainer/certificates/",
+        blank=True,
+        null=True,
+    )
+
+    approval_status = models.CharField(
+        max_length=20,
+        choices=ApprovalStatus.choices,
+        default=ApprovalStatus.PENDING,
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name} ({self.user.email})"
