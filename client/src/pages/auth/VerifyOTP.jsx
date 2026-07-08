@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { verifyOtpSchema } from '../../validation/verifyOtpSchema';
@@ -18,6 +18,26 @@ const VerifyOTP = () => {
   const email = location.state?.email;
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [timer, setTimer] = useState(300); // 5 minutes in seconds
+
+  useEffect(() => {
+    let interval;
+    if (timer > 0) {
+      interval = setInterval(() => {
+        setTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [timer]);
+
+  const formatTime = (timeInSeconds) => {
+    const minutes = Math.floor(timeInSeconds / 60);
+    const seconds = timeInSeconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
 
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: zodResolver(verifyOtpSchema),
@@ -45,6 +65,29 @@ const VerifyOTP = () => {
       toast.error(error.response?.data?.message || 'An error occurred during verification.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleResendOTP = async () => {
+    if (timer > 0) return;
+    
+    try {
+      setIsResending(true);
+      const response = await api.post('/api/auth/resend-otp/', {
+        email: email,
+        purpose: 'SIGNUP'
+      });
+      
+      if (response.data.success) {
+        toast.success(response.data.message || 'OTP resent successfully!');
+        setTimer(300); // Reset timer to 5 minutes
+      } else {
+        toast.error(response.data.message || 'Failed to resend OTP.');
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'An error occurred while resending OTP.');
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -83,6 +126,24 @@ const VerifyOTP = () => {
               Verify OTP
             </Button>
           </form>
+
+          <div className="mt-6 text-center text-sm text-gray-400">
+            {timer > 0 ? (
+              <p>Resend code in {formatTime(timer)}</p>
+            ) : (
+              <p>
+                Didn't receive the code?{' '}
+                <button
+                  type="button"
+                  onClick={handleResendOTP}
+                  disabled={isResending}
+                  className="font-semibold text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
+                >
+                  {isResending ? 'Resending...' : 'Resend Code'}
+                </button>
+              </p>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>

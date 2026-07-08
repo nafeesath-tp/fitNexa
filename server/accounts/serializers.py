@@ -64,6 +64,16 @@ class VerifyOTPSerializer(serializers.Serializer):
     )
 
 
+class ResendOTPSerializer(serializers.Serializer):
+    
+    email = serializers.EmailField()
+
+    purpose = serializers.ChoiceField(
+        choices=EmailOTP.Purpose.choices,
+        default=EmailOTP.Purpose.SIGNUP
+    )
+
+
 class LoginSerializer(serializers.Serializer):
 
     email = serializers.EmailField()

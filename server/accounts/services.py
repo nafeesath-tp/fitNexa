@@ -80,6 +80,44 @@ def verify_otp(validated_data):
     return user
 
 
+@transaction.atomic
+def resend_otp(validated_data):
+    """
+    Resend OTP to a user. Invalidates previous unused OTPs for the same purpose.
+    Returns None.
+    """
+    email = validated_data["email"]
+    purpose = validated_data.get("purpose", EmailOTP.Purpose.SIGNUP)
+
+    try:
+        user = User.objects.get(email=email)
+    except User.DoesNotExist:
+        # Silently return to prevent email enumeration
+        return
+
+    if user.is_verified and purpose == EmailOTP.Purpose.SIGNUP:
+        raise serializers.ValidationError({"email": "Email is already verified."})
+
+    # Invalidate previous unused OTPs for this purpose
+    EmailOTP.objects.filter(
+        user=user,
+        purpose=purpose,
+        is_used=False
+    ).update(is_used=True)
+
+    # Generate and save new OTP
+    otp = generate_otp()
+    
+    EmailOTP.objects.create(
+        user=user,
+        otp=otp,
+        purpose=purpose,
+        expires_at=timezone.now() + timedelta(minutes=5),
+    )
+
+    send_otp_email(email=user.email, otp=otp)
+
+
 def login_user(validated_data):
     """
     Authenticate user, check account state, and generate JWT tokens.

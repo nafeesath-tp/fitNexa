@@ -18,7 +18,7 @@ const Signup = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
 
-  const { register, handleSubmit, control, formState: { errors } } = useForm({
+  const { register, handleSubmit, control, setError, formState: { errors } } = useForm({
     resolver: zodResolver(signupSchema),
     defaultValues: {
       role: 'CLIENT',
@@ -42,7 +42,20 @@ const Signup = () => {
         toast.error(response.message || 'Failed to sign up.');
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'An error occurred during signup.');
+      if (error.response?.data?.errors) {
+        const serverErrors = error.response.data.errors;
+        Object.keys(serverErrors).forEach((field) => {
+          // DRF returns arrays for errors, so we take the first item
+          const message = Array.isArray(serverErrors[field]) 
+            ? serverErrors[field][0] 
+            : serverErrors[field];
+          
+          setError(field, { type: 'server', message });
+        });
+        toast.error('Please fix the errors in the form.');
+      } else {
+        toast.error(error.response?.data?.message || 'An error occurred during signup.');
+      }
     } finally {
       setIsLoading(false);
     }

@@ -5,11 +5,11 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.exceptions import ValidationError
 
 from .serializers import (
-    SignupSerializer, VerifyOTPSerializer, LoginSerializer,
+    SignupSerializer, VerifyOTPSerializer, ResendOTPSerializer, LoginSerializer,
     ForgotPasswordSerializer, VerifyResetOTPSerializer, ResetPasswordSerializer,
     PublicSpecializationSerializer
 )
-from .services import signup_user, verify_otp, login_user, forgot_password, verify_reset_otp, reset_password
+from .services import signup_user, verify_otp, resend_otp, login_user, forgot_password, verify_reset_otp, reset_password
 from .models import Specialization
 
 class PublicSpecializationListAPIView(APIView):
@@ -97,6 +97,53 @@ class VerifyOTPAPIView(APIView):
                         "errors": e.detail,
                     },
                     status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        return Response(
+            {
+                "success": False,
+                "message": "Invalid input.",
+                "errors": serializer.errors,
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+class ResendOTPAPIView(APIView):
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = ResendOTPSerializer(data=request.data)
+
+        if serializer.is_valid():
+            try:
+                resend_otp(serializer.validated_data)
+                return Response(
+                    {
+                        "success": True,
+                        "message": "A new OTP has been sent to your email.",
+                        "data": {},
+                    },
+                    status=status.HTTP_200_OK,
+                )
+            except ValidationError as e:
+                return Response(
+                    {
+                        "success": False,
+                        "message": "Failed to resend OTP.",
+                        "errors": e.detail,
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            except Exception:
+                return Response(
+                    {
+                        "success": False,
+                        "message": "Something went wrong. Please try again later.",
+                        "errors": {},
+                    },
+                    status=status.HTTP_503_SERVICE_UNAVAILABLE,
                 )
 
         return Response(
