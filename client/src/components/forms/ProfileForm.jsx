@@ -18,26 +18,78 @@ import Modal from '../ui/Modal';
 const ProfileForm = ({ initialValues = {}, onSubmit, isLoading, isEditMode = false }) => {
   const [step, setStep] = useState(1);
   const [isImageModalOpen, setImageModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { register, handleSubmit, trigger, control, formState: { errors } } = useForm({
     resolver: zodResolver(clientProfileSchema),
-    mode: 'onTouched',
+    mode: 'onBlur',
     defaultValues: initialValues
   });
 
-  const nextStep = async () => {
+  const nextStep = async (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
     let fieldsToValidate = [];
     if (step === 1) fieldsToValidate = ['first_name', 'last_name', 'phone', 'profile_image'];
     if (step === 2) fieldsToValidate = ['date_of_birth', 'gender', 'height_cm', 'weight_kg', 'target_weight_kg'];
 
     const isStepValid = await trigger(fieldsToValidate);
     if (isStepValid) {
+      console.log('📍 Moving to step:', step + 1);
       setStep((prev) => prev + 1);
     }
   };
 
-  const prevStep = () => {
+  const prevStep = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    console.log('📍 Moving back to step:', step - 1);
     setStep((prev) => prev - 1);
+  };
+
+  const handleFormSubmit = (e) => {
+    console.log('🔥 Form submit triggered!', { step, isEditMode, isSubmitting, target: e.target, submitter: e.nativeEvent?.submitter });
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Prevent double submission
+    if (isSubmitting) {
+      console.log('❌ Form submission blocked - already submitting');
+      return;
+    }
+
+    // Only allow submission on step 3 when explicitly clicking submit button
+    const isSubmitButton = e.nativeEvent?.submitter?.type === 'submit';
+
+    if (!isSubmitButton) {
+      console.log('❌ Form submission blocked - not from submit button');
+      return;
+    }
+
+    if (isEditMode || step === 3) {
+      console.log('✅ Form submission allowed');
+      setIsSubmitting(true);
+      handleSubmit((data) => {
+        onSubmit(data);
+        // Reset after a delay
+        setTimeout(() => setIsSubmitting(false), 2000);
+      })(e);
+    } else {
+      console.log('❌ Form submission blocked - not on step 3, current step:', step);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    // Prevent Enter key from submitting form unless on submit button
+    if (e.key === 'Enter' && e.target.type !== 'submit' && e.target.tagName !== 'BUTTON') {
+      e.preventDefault();
+      e.stopPropagation();
+    }
   };
 
   return (
@@ -61,19 +113,7 @@ const ProfileForm = ({ initialValues = {}, onSubmit, isLoading, isEditMode = fal
 
       <Card className={isEditMode ? 'border-none bg-transparent shadow-none' : ''}>
         <CardContent className={isEditMode ? 'p-0' : 'pt-6'}>
-          <form
-            onSubmit={handleSubmit(onSubmit)}
-            onKeyDown={(e) => {
-              if (
-                e.key === 'Enter' &&
-                e.target.tagName !== 'BUTTON' &&
-                e.target.tagName !== 'TEXTAREA'
-              ) {
-                e.preventDefault();
-              }
-            }}
-            className="space-y-8"
-          >
+          <form onSubmit={handleFormSubmit} onKeyDown={handleKeyDown} className="space-y-8">
 
             {/* STEP 1: Personal Info */}
             {(isEditMode || step === 1) && (
@@ -123,6 +163,10 @@ const ProfileForm = ({ initialValues = {}, onSubmit, isLoading, isEditMode = fal
                         file:bg-primary/10 file:text-primary
                         hover:file:bg-primary/20
                         cursor-pointer"
+                      onClick={(e) => {
+                        // Clear any previous errors when clicking to choose file
+                        e.target.setCustomValidity('');
+                      }}
                       {...register('profile_image')}
                     />
                     <FormError error={errors.profile_image} />
@@ -295,6 +339,12 @@ const ProfileForm = ({ initialValues = {}, onSubmit, isLoading, isEditMode = fal
                       className="flex w-full rounded-lg border border-border/10 bg-background px-3 py-2 text-sm text-gray-100 placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200"
                       rows="3"
                       placeholder="Any medical conditions or injuries the trainer should know about"
+                      onKeyDown={(e) => {
+                        // Allow Enter in textarea for new lines
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          // Do nothing - allow normal behavior
+                        }
+                      }}
                       {...register('medical_condition')}
                     />
                     <FormError error={errors.medical_condition} />
@@ -319,7 +369,13 @@ const ProfileForm = ({ initialValues = {}, onSubmit, isLoading, isEditMode = fal
                     Next Step
                   </Button>
                 ) : (
-                  <Button type="submit" isLoading={isLoading}>
+                  <Button
+                    type="submit"
+                    isLoading={isLoading}
+                    onClick={(e) => {
+                      console.log('🎯 Complete Setup button clicked');
+                    }}
+                  >
                     Complete Setup
                   </Button>
                 )}

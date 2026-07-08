@@ -1,3 +1,6 @@
+
+
+
 import React, { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Eye, FileText, CheckCircle, XCircle } from 'lucide-react';
@@ -16,14 +19,14 @@ import { cn } from '../../utils/cn';
 const Trainers = () => {
   const { trainers, setTrainers } = useAdminStore();
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // Filter state
   const [filter, setFilter] = useState('ALL');
 
   // Modal states
   const [selectedTrainer, setSelectedTrainer] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-  
+
   // Action states
   const [actionTrainer, setActionTrainer] = useState(null); // { id, newStatus }
   const [isActionModalOpen, setIsActionModalOpen] = useState(false);
@@ -76,8 +79,8 @@ const Trainers = () => {
   });
 
   const columns = [
-    { 
-      header: 'Trainer', 
+    {
+      header: 'Trainer',
       accessor: 'name',
       render: (row) => (
         <div className="flex items-center gap-3">
@@ -89,20 +92,20 @@ const Trainers = () => {
         </div>
       )
     },
-    { 
-      header: 'Specialization', 
+    {
+      header: 'Specialization',
       accessor: 'specialization',
       render: (row) => row.specialization?.name || row.specialization_name || 'N/A'
     },
     { header: 'Experience', accessor: 'experience', render: (row) => `${row.experience} yrs` },
-    { 
-      header: 'Status', 
+    {
+      header: 'Status',
       accessor: 'approval_status',
       render: (row) => (
         <Badge variant={
           row.approval_status === 'APPROVED' ? 'success' :
-          row.approval_status === 'PENDING' ? 'warning' :
-          row.approval_status === 'REJECTED' ? 'danger' : 'secondary'
+            row.approval_status === 'PENDING' ? 'warning' :
+              row.approval_status === 'REJECTED' ? 'danger' : 'secondary'
         }>
           {row.approval_status}
         </Badge>
@@ -112,7 +115,7 @@ const Trainers = () => {
       header: 'Actions',
       accessor: 'actions',
       render: (row) => (
-        <button 
+        <button
           onClick={(e) => { e.stopPropagation(); handleViewProfile(row); }}
           className="flex items-center gap-1 text-primary hover:text-primary-hover transition-colors font-medium text-sm"
         >
@@ -125,8 +128,8 @@ const Trainers = () => {
 
   return (
     <div className="py-6 space-y-6">
-      <PageHeader 
-        title="Trainer Management" 
+      <PageHeader
+        title="Trainer Management"
         description="Review applications and manage active trainers."
       />
 
@@ -138,8 +141,8 @@ const Trainers = () => {
             onClick={() => setFilter(status)}
             className={cn(
               "px-4 py-2 rounded-full text-sm font-medium transition-all duration-200",
-              filter === status 
-                ? "bg-primary/20 text-primary border-primary/50 border" 
+              filter === status
+                ? "bg-primary/20 text-primary border-primary/50 border"
                 : "bg-surface text-muted border-border/10 border hover:bg-surface-hover"
             )}
           >
@@ -148,7 +151,7 @@ const Trainers = () => {
         ))}
       </div>
 
-      <DataTable 
+      <DataTable
         columns={columns}
         data={filteredTrainers}
         loading={isLoading}
@@ -157,18 +160,18 @@ const Trainers = () => {
 
       {/* Profile Review Modal */}
       {selectedTrainer && (
-        <Modal 
-          isOpen={isViewModalOpen} 
-          onClose={() => setIsViewModalOpen(false)} 
+        <Modal
+          isOpen={isViewModalOpen}
+          onClose={() => setIsViewModalOpen(false)}
           title="Review Trainer Application"
           maxWidth="md"
         >
           <div className="space-y-6">
             <div className="flex items-center gap-6">
-              <Avatar 
-                image={selectedTrainer.profile_image} 
-                name={`${selectedTrainer.first_name} ${selectedTrainer.last_name}`} 
-                size="xl" 
+              <Avatar
+                image={selectedTrainer.profile_image}
+                name={`${selectedTrainer.first_name} ${selectedTrainer.last_name}`}
+                size="xl"
                 className="border-2 border-primary/20 shadow-md"
               />
               <div>
@@ -180,8 +183,8 @@ const Trainers = () => {
                 </p>
                 <Badge variant={
                   selectedTrainer.approval_status === 'APPROVED' ? 'success' :
-                  selectedTrainer.approval_status === 'PENDING' ? 'warning' :
-                  selectedTrainer.approval_status === 'REJECTED' ? 'danger' : 'secondary'
+                    selectedTrainer.approval_status === 'PENDING' ? 'warning' :
+                      selectedTrainer.approval_status === 'REJECTED' ? 'danger' : 'secondary'
                 }>
                   {selectedTrainer.approval_status}
                 </Badge>
@@ -208,36 +211,53 @@ const Trainers = () => {
               </div>
             </div>
 
-            {selectedTrainer.certificate && (
-              <div>
-                <h4 className="text-sm font-semibold text-gray-200 mb-2">Certification</h4>
-                <a 
-                  href={selectedTrainer.certificate} 
-                  target="_blank" 
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-2 text-primary hover:text-primary-hover transition-colors font-medium text-sm"
-                >
-                  <FileText className="w-5 h-5" />
-                  View PDF Certificate
-                </a>
+            <div>
+              <h4 className="text-sm font-semibold text-gray-200 mb-2">Certification</h4>
+              <div className="bg-background rounded-xl p-4 border border-border/10">
+                {selectedTrainer.certificate ? (
+                  <div className="space-y-3">
+                    {/* Certificate Preview */}
+                    <div className="border border-border/10 rounded-lg overflow-hidden h-64 bg-surface flex flex-col justify-center items-center">
+                      <iframe
+                        src={selectedTrainer.certificate}
+                        title="Certificate preview"
+                        className="w-full h-full border-0"
+                      />
+                    </div>
+
+                    {/* Download Button */}
+                    <a
+                      href={selectedTrainer.certificate?.replace('/upload/', '/upload/fl_attachment/')}
+                      target="_blank"
+                      rel="noreferrer"
+                      download
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-colors font-medium text-sm border border-primary/20"
+                    >
+                      <FileText className="w-5 h-5" />
+                      Download Certificate (High Quality)
+                    </a>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted italic">No certificate uploaded</p>
+                )}
               </div>
-            )}
+            </div>
 
             {/* Action Buttons */}
             <div className="flex justify-end gap-3 pt-6 border-t border-border/10">
               {selectedTrainer.approval_status !== 'REJECTED' && (
-                <Button 
+                <Button
                   variant="danger"
                   className="bg-danger/10 text-danger hover:bg-danger/20"
                   onClick={() => handleStatusChange(selectedTrainer, 'REJECTED')}
                 >
                   <XCircle className="w-4 h-4 mr-2" />
-                  {selectedTrainer.approval_status === 'APPROVED' ? 'Revoke Access' : 'Reject'}
+                  Reject
                 </Button>
               )}
               {selectedTrainer.approval_status !== 'APPROVED' && (
-                <Button 
-                  variant="primary" 
+                <Button
+                  variant="primary"
                   className="bg-green-600 hover:bg-green-700 shadow-green-600/20"
                   onClick={() => handleStatusChange(selectedTrainer, 'APPROVED')}
                 >
@@ -265,11 +285,11 @@ const Trainers = () => {
             <Button type="button" variant="secondary" onClick={() => setIsActionModalOpen(false)} disabled={isSubmitting}>
               Cancel
             </Button>
-            <Button 
-              type="button" 
-              variant={actionTrainer?.newStatus === 'REJECTED' ? 'danger' : 'primary'} 
+            <Button
+              type="button"
+              variant={actionTrainer?.newStatus === 'REJECTED' ? 'danger' : 'primary'}
               className={actionTrainer?.newStatus === 'APPROVED' ? 'bg-green-600 hover:bg-green-700 shadow-green-600/20' : ''}
-              onClick={confirmStatusChange} 
+              onClick={confirmStatusChange}
               isLoading={isSubmitting}
             >
               Confirm Change

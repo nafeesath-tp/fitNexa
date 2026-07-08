@@ -33,7 +33,9 @@ export const clientProfileSchema = z.object({
 
   // Step 2: Basic & Health
   date_of_birth: z.string().min(1, 'Date of birth is required'),
-  gender: z.enum(["MALE", "FEMALE", "OTHER", "PREFER_NOT_TO_SAY"], { required_error: "Gender is required" }),
+  gender: z.enum(["MALE", "FEMALE", "OTHER", "PREFER_NOT_TO_SAY"], { 
+    errorMap: () => ({ message: "Gender is required" }) 
+  }),
   height_cm: z.preprocess((val) => Number(val), 
     z.number({ required_error: "Height is required", invalid_type_error: "Height must be a number" }).min(50, 'Height must be at least 50cm').max(300, 'Height cannot exceed 300cm')
   ),
@@ -48,16 +50,24 @@ export const clientProfileSchema = z.object({
   fitness_goal: z.enum([
     "LOSE_WEIGHT", "BUILD_MUSCLE", "IMPROVE_ENDURANCE", 
     "INCREASE_FLEXIBILITY", "MAINTAIN_FITNESS", "GENERAL_HEALTH"
-  ], { required_error: "Please select a fitness goal" }),
+  ], { 
+    errorMap: () => ({ message: "Please select a fitness goal" }) 
+  }),
   preferred_workout: z.enum([
     "STRENGTH_TRAINING", "CARDIO", "YOGA", "HIIT", 
     "PILATES", "CROSSFIT", "SWIMMING", "CYCLING"
-  ], { required_error: "Please select a preferred workout style" }),
-  experience_level: z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED"], { required_error: "Please select your experience level" }),
+  ], { 
+    errorMap: () => ({ message: "Please select a preferred workout style" }) 
+  }),
+  experience_level: z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED"], { 
+    errorMap: () => ({ message: "Please select your experience level" }) 
+  }),
   diet_preference: z.enum([
     "NONE", "VEGETARIAN", "VEGAN", "KETO", 
     "PALEO", "GLUTEN_FREE", "DAIRY_FREE"
-  ], { required_error: "Please select your dietary preference" }),
+  ], { 
+    errorMap: () => ({ message: "Please select your dietary preference" }) 
+  }),
   medical_condition: z.string().optional().or(z.literal('')),
 }).refine(data => {
   if (data.weight_kg !== undefined && data.target_weight_kg !== undefined) {

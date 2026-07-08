@@ -1,3 +1,6 @@
+
+
+
 import React from 'react';
 import { cn } from '../../utils/cn';
 
@@ -12,6 +15,14 @@ const RadioGroup = ({ children, className }) => {
 export default RadioGroup;
 
 export const RadioOption = React.forwardRef(({ label, icon: Icon, error, className, ...props }, ref) => {
+  const handleKeyDown = (e) => {
+    // Prevent Enter from submitting form
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+
   return (
     <label className={cn(
       "relative flex cursor-pointer flex-col items-center justify-center rounded-xl border p-4 text-center transition-all duration-200",
@@ -23,6 +34,7 @@ export const RadioOption = React.forwardRef(({ label, icon: Icon, error, classNa
       <input
         type="radio"
         ref={ref}
+        onKeyDown={handleKeyDown}
         className="sr-only"
         {...props}
       />

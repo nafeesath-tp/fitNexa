@@ -1,10 +1,13 @@
+
+
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { trainerProfileSchema } from '../../validation/trainerProfileSchema';
 import { trainerApi } from '../../services/trainer/trainerApi';
 import toast from 'react-hot-toast';
-import { FileBadge, Briefcase } from 'lucide-react';
+import { FileBadge, Briefcase, FileText } from 'lucide-react';
 
 import Input from '../ui/Input';
 import Button from '../ui/Button';
@@ -32,25 +35,58 @@ const TrainerProfileForm = ({ initialValues = {}, onSubmit, isLoading, isEditMod
     fetchSpecializations();
   }, []);
 
-  const { register, handleSubmit, trigger, formState: { errors } } = useForm({
+  const { register, handleSubmit, trigger, clearErrors, formState: { errors } } = useForm({
     resolver: zodResolver(trainerProfileSchema),
-    mode: 'onTouched',
+    mode: 'onBlur',
     defaultValues: initialValues
   });
 
-  const nextStep = async () => {
+  const nextStep = async (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
     let fieldsToValidate = [];
     if (step === 1) fieldsToValidate = ['first_name', 'last_name', 'phone', 'profile_image'];
     if (step === 2) fieldsToValidate = ['bio', 'experience', 'specialization', 'certificate'];
-    
+
     const isStepValid = await trigger(fieldsToValidate);
     if (isStepValid) {
       setStep((prev) => prev + 1);
     }
   };
 
-  const prevStep = () => {
+  const prevStep = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     setStep((prev) => prev - 1);
+  };
+
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Only allow submission on step 2
+    const isSubmitButton = e.nativeEvent?.submitter?.type === 'submit';
+
+    if (!isSubmitButton) {
+      return;
+    }
+
+    if (step === 2) {
+      handleSubmit(onSubmit)(e);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    // Prevent Enter key from submitting form
+    if (e.key === 'Enter' && e.target.type !== 'submit' && e.target.tagName !== 'BUTTON') {
+      e.preventDefault();
+      e.stopPropagation();
+    }
   };
 
   return (
@@ -60,10 +96,10 @@ const TrainerProfileForm = ({ initialValues = {}, onSubmit, isLoading, isEditMod
           {isEditMode ? 'Edit Profile' : 'Trainer Onboarding'}
         </h2>
         <p className="text-muted">Step {step} of 2</p>
-        
+
         {/* Progress Bar */}
         <div className="w-full bg-surface h-2 rounded-full mt-4 overflow-hidden border border-border/10">
-          <div 
+          <div
             className="bg-primary h-full rounded-full transition-all duration-300 ease-out"
             style={{ width: `${(step / 2) * 100}%` }}
           />
@@ -72,8 +108,8 @@ const TrainerProfileForm = ({ initialValues = {}, onSubmit, isLoading, isEditMod
 
       <Card>
         <CardContent className="pt-6">
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            
+          <form onSubmit={handleFormSubmit} onKeyDown={handleKeyDown} className="space-y-6">
+
             {/* STEP 1: Personal Info */}
             {step === 1 && (
               <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
@@ -81,39 +117,39 @@ const TrainerProfileForm = ({ initialValues = {}, onSubmit, isLoading, isEditMod
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <FormField>
                       <FormLabel>First Name *</FormLabel>
-                      <Input 
-                        placeholder="Jane" 
-                        {...register('first_name')} 
-                        error={errors.first_name} 
+                      <Input
+                        placeholder="Jane"
+                        {...register('first_name')}
+                        error={errors.first_name}
                       />
                       <FormError error={errors.first_name} />
                     </FormField>
-                    
+
                     <FormField>
                       <FormLabel>Last Name *</FormLabel>
-                      <Input 
-                        placeholder="Doe" 
-                        {...register('last_name')} 
-                        error={errors.last_name} 
+                      <Input
+                        placeholder="Doe"
+                        {...register('last_name')}
+                        error={errors.last_name}
                       />
                       <FormError error={errors.last_name} />
                     </FormField>
                   </div>
-                  
+
                   <FormField>
                     <FormLabel>Phone Number *</FormLabel>
-                    <Input 
-                      placeholder="+1234567890" 
-                      {...register('phone')} 
-                      error={errors.phone} 
+                    <Input
+                      placeholder="+1234567890"
+                      {...register('phone')}
+                      error={errors.phone}
                     />
                     <FormError error={errors.phone} />
                   </FormField>
 
                   <FormField>
                     <FormLabel>Profile Image (Optional)</FormLabel>
-                    <input 
-                      type="file" 
+                    <input
+                      type="file"
                       accept="image/jpeg, image/png, image/webp"
                       className="block w-full text-sm text-gray-300
                         file:mr-4 file:py-2 file:px-4
@@ -122,10 +158,28 @@ const TrainerProfileForm = ({ initialValues = {}, onSubmit, isLoading, isEditMod
                         file:bg-primary/10 file:text-primary
                         hover:file:bg-primary/20
                         cursor-pointer"
-                      {...register('profile_image')}
+                      onClick={(e) => {
+                        // Clear any previous errors when clicking to choose file
+                        e.target.setCustomValidity('');
+                        clearErrors('profile_image');
+                      }}
+                      onChange={(e) => {
+                        // Clear errors when a file is selected
+                        if (e.target.files && e.target.files.length > 0) {
+                          clearErrors('profile_image');
+                        }
+                        // Call the register's onChange
+                        register('profile_image').onChange(e);
+                      }}
+                      onBlur={(e) => {
+                        // Don't trigger validation on blur for file inputs
+                        clearErrors('profile_image');
+                      }}
+                      name="profile_image"
+                      ref={register('profile_image').ref}
                     />
                     <FormError error={errors.profile_image} />
-                    
+
                     {isEditMode && initialValues.profile_image && typeof initialValues.profile_image === 'string' && (
                       <p className="text-sm text-muted mt-2">
                         Current image: <span className="text-gray-300 font-mono text-xs">{initialValues.profile_image.split('/').pop()}</span>{' '}
@@ -141,7 +195,7 @@ const TrainerProfileForm = ({ initialValues = {}, onSubmit, isLoading, isEditMod
             {step === 2 && (
               <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                 <FormSection title="Professional Details" description="Highlight your expertise">
-                  
+
                   <FormField>
                     <FormLabel>Primary Specialization *</FormLabel>
                     <Select {...register('specialization')} error={errors.specialization}>
@@ -155,21 +209,27 @@ const TrainerProfileForm = ({ initialValues = {}, onSubmit, isLoading, isEditMod
 
                   <FormField>
                     <FormLabel>Years of Experience *</FormLabel>
-                    <Input 
+                    <Input
                       type="number"
                       placeholder="5"
-                      {...register('experience')} 
-                      error={errors.experience} 
+                      {...register('experience')}
+                      error={errors.experience}
                     />
                     <FormError error={errors.experience} />
                   </FormField>
 
                   <FormField>
                     <FormLabel>Professional Bio *</FormLabel>
-                    <textarea 
+                    <textarea
                       className="flex w-full rounded-lg border border-border/10 bg-background px-3 py-2 text-sm text-gray-100 placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200"
                       rows="4"
                       placeholder="Describe your training philosophy and background..."
+                      onKeyDown={(e) => {
+                        // Allow Enter in textarea for new lines but prevent form submission
+                        if (e.key === 'Enter' && e.ctrlKey) {
+                          e.stopPropagation();
+                        }
+                      }}
                       {...register('bio')}
                     />
                     <FormError error={errors.bio} />
@@ -177,8 +237,8 @@ const TrainerProfileForm = ({ initialValues = {}, onSubmit, isLoading, isEditMod
 
                   <FormField>
                     <FormLabel>Certification Document (PDF Only) *</FormLabel>
-                    <input 
-                      type="file" 
+                    <input
+                      type="file"
                       accept="application/pdf"
                       className="block w-full text-sm text-gray-300
                         file:mr-4 file:py-2 file:px-4
@@ -187,14 +247,60 @@ const TrainerProfileForm = ({ initialValues = {}, onSubmit, isLoading, isEditMod
                         file:bg-primary/10 file:text-primary
                         hover:file:bg-primary/20
                         cursor-pointer"
-                      {...register('certificate')}
+                      onClick={(e) => {
+                        // Clear any previous errors when clicking to choose file
+                        e.target.setCustomValidity('');
+                        clearErrors('certificate');
+                      }}
+                      onChange={(e) => {
+                        // Clear errors when a file is selected
+                        if (e.target.files && e.target.files.length > 0) {
+                          clearErrors('certificate');
+                        }
+                        // Call the register's onChange
+                        register('certificate').onChange(e);
+                      }}
+                      onBlur={(e) => {
+                        // Don't trigger validation on blur if no file is selected
+                        // Only validate on form submission
+                        if (!e.target.files || e.target.files.length === 0) {
+                          clearErrors('certificate');
+                        }
+                      }}
+                      name="certificate"
+                      ref={register('certificate').ref}
                     />
                     <FormError error={errors.certificate} />
-                    
+
                     {isEditMode && initialValues.certificate && typeof initialValues.certificate === 'string' && (
-                      <p className="text-sm text-muted mt-2">
-                        Current certificate: <a href={initialValues.certificate} target="_blank" rel="noreferrer" className="text-primary hover:underline">View</a>
-                      </p>
+                      <div className="mt-3 p-3 bg-primary/5 border border-primary/20 rounded-lg space-y-3">
+                        <p className="text-xs text-muted mb-2">Current Certificate:</p>
+
+                        {/* Certificate Preview */}
+                        <div className="border border-primary/10 rounded-lg overflow-hidden h-64 bg-surface flex flex-col justify-center items-center">
+                          <iframe
+                            src={initialValues.certificate}
+                            title="Certificate preview"
+                            className="w-full h-full border-0"
+                          />
+                        </div>
+
+                        {/* Download Button */}
+                        <a
+                          href={initialValues.certificate?.replace('/upload/', '/upload/fl_attachment/')}
+                          target="_blank"
+                          rel="noreferrer"
+                          download
+                          className="inline-flex items-center gap-2 px-3 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-colors font-medium text-sm border border-primary/20"
+                        >
+                          <FileText className="w-4 h-4" />
+                          Download Certificate (High Quality)
+                        </a>
+
+                        <p className="text-xs text-muted mt-2 italic">
+                          Upload a new file above to replace this certificate
+                        </p>
+                      </div>
                     )}
                   </FormField>
                 </FormSection>
@@ -210,7 +316,7 @@ const TrainerProfileForm = ({ initialValues = {}, onSubmit, isLoading, isEditMod
               ) : (
                 <div /> // Spacer
               )}
-              
+
               {step < 2 ? (
                 <Button type="button" onClick={nextStep}>
                   Next Step
@@ -221,20 +327,20 @@ const TrainerProfileForm = ({ initialValues = {}, onSubmit, isLoading, isEditMod
                 </Button>
               )}
             </div>
-            
+
           </form>
         </CardContent>
 
-      <Modal isOpen={isImageModalOpen} onClose={() => setImageModalOpen(false)} title="Profile Image">
-        <div className="flex justify-center bg-gray-900 rounded-lg p-2">
-          <img 
-            src={initialValues.profile_image} 
-            alt="Profile Preview" 
-            className="max-w-full max-h-[60vh] rounded-md object-contain" 
-          />
-        </div>
-      </Modal>
-    </Card>
+        <Modal isOpen={isImageModalOpen} onClose={() => setImageModalOpen(false)} title="Profile Image">
+          <div className="flex justify-center bg-gray-900 rounded-lg p-2">
+            <img
+              src={initialValues.profile_image}
+              alt="Profile Preview"
+              className="max-w-full max-h-[60vh] rounded-md object-contain"
+            />
+          </div>
+        </Modal>
+      </Card>
     </div>
   );
 };

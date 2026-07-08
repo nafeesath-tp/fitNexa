@@ -1,12 +1,32 @@
+
+
+
 import React from 'react';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
-const Select = React.forwardRef(({ className, error, children, ...props }, ref) => {
+const Select = React.forwardRef(({ className, error, children, onChange, ...props }, ref) => {
+  const handleChange = (e) => {
+    e.stopPropagation();
+    if (onChange) {
+      onChange(e);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    // Prevent Enter key from submitting the form
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+
   return (
     <div className="relative">
       <select
         ref={ref}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
         className={cn(
           "flex h-11 w-full appearance-none rounded-lg border border-border/10 bg-background px-3 py-2 text-sm text-gray-100 transition-all duration-200",
           "focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary pr-10",

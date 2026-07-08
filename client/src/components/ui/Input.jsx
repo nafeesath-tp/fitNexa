@@ -1,10 +1,25 @@
+
+
+
 import React from 'react';
 import { cn } from '../../utils/cn';
 
-const Input = React.forwardRef(({ className, error, ...props }, ref) => {
+const Input = React.forwardRef(({ className, error, type = 'text', onKeyDown, ...props }, ref) => {
+  const handleKeyDown = (e) => {
+    // Prevent Enter key from submitting form
+    if (e.key === 'Enter' && type !== 'submit') {
+      e.preventDefault();
+    }
+    if (onKeyDown) {
+      onKeyDown(e);
+    }
+  };
+
   return (
     <input
       ref={ref}
+      type={type}
+      onKeyDown={handleKeyDown}
       className={cn(
         "flex h-11 w-full rounded-lg border border-border/10 bg-background px-3 py-2 text-sm text-gray-100 placeholder:text-muted transition-all duration-200",
         "focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary",

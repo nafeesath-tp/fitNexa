@@ -6,7 +6,6 @@ from .managers import UserManager
 from django.conf import settings
 from django.utils import timezone
 
-
 class User(AbstractBaseUser, PermissionsMixin):
 
     class Role(models.TextChoices):

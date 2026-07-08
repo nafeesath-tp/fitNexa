@@ -1,3 +1,6 @@
+
+
+
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -97,6 +100,34 @@ class AdminSpecializationRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDes
     serializer_class = AdminSpecializationSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
     lookup_field = 'id'
+
+    def destroy(self, request, *args, **kwargs):
+        """
+        Override destroy to provide better error messages when deletion fails.
+        """
+        instance = self.get_object()
+        
+        # Check if any trainers are using this specialization
+        trainer_count = instance.trainers.count()
+        
+        if trainer_count > 0:
+            return Response(
+                {
+                    "success": False,
+                    "message": f"Cannot delete this specialization. It is currently being used by {trainer_count} trainer(s). Please reassign the trainers before deleting."
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # If no trainers are using it, proceed with deletion
+        self.perform_destroy(instance)
+        return Response(
+            {
+                "success": True,
+                "message": "Specialization deleted successfully."
+            },
+            status=status.HTTP_200_OK
+        )
 
 from .serializers import AdminClientListSerializer, AdminClientDetailSerializer
 from .services import list_clients, get_client_detail

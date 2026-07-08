@@ -1,6 +1,5 @@
 
 
-
 import React from 'react';
 import { Loader2 } from 'lucide-react';
 import { cn } from '../../utils/cn';
@@ -11,8 +10,8 @@ const Button = React.forwardRef(({
   size = 'md',
   isLoading = false,
   disabled,
-  className,
   type = 'button',
+  className,
   ...props
 }, ref) => {
 
