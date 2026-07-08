@@ -147,3 +147,48 @@ class AdminClientDetailAPIView(APIView):
             },
             status=status.HTTP_200_OK
         )
+
+from .serializers import AdminClientStatusUpdateSerializer
+from client.models import ClientProfile
+
+class AdminClientStatusAPIView(APIView):
+    """
+    PATCH /api/admin/clients/<id>/status/
+    Block or unblock a client.
+    """
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def patch(self, request, id):
+        try:
+            profile = ClientProfile.objects.get(id=id)
+        except ClientProfile.DoesNotExist:
+            return Response(
+                {"success": False, "message": "Client profile not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = AdminClientStatusUpdateSerializer(data=request.data)
+        if serializer.is_valid():
+            is_active = serializer.validated_data.get('is_active')
+            
+            user = profile.user
+            if user.is_active == is_active:
+                state = "active" if is_active else "blocked"
+                return Response(
+                    {"success": False, "message": f"Client is already {state}."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            user.is_active = is_active
+            user.save()
+            
+            state = "unblocked" if is_active else "blocked"
+            return Response(
+                {"success": True, "message": f"Client successfully {state}."},
+                status=status.HTTP_200_OK
+            )
+            
+        return Response(
+            {"success": False, "message": "Invalid input.", "errors": serializer.errors},
+            status=status.HTTP_400_BAD_REQUEST
+        )

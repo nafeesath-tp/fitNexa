@@ -11,10 +11,12 @@ import Button from '../ui/Button';
 import Select from '../ui/Select';
 import { FormField, FormLabel, FormError, FormSection } from '../ui/Form';
 import { Card, CardContent } from '../ui/Card';
+import Modal from '../ui/Modal';
 
 const TrainerProfileForm = ({ initialValues = {}, onSubmit, isLoading, isEditMode = false }) => {
   const [step, setStep] = useState(1);
   const [specializations, setSpecializations] = useState([]);
+  const [isImageModalOpen, setImageModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchSpecializations = async () => {
@@ -126,7 +128,8 @@ const TrainerProfileForm = ({ initialValues = {}, onSubmit, isLoading, isEditMod
                     
                     {isEditMode && initialValues.profile_image && typeof initialValues.profile_image === 'string' && (
                       <p className="text-sm text-muted mt-2">
-                        Current image: <a href={initialValues.profile_image} target="_blank" rel="noreferrer" className="text-primary hover:underline">View</a>
+                        Current image: <span className="text-gray-300 font-mono text-xs">{initialValues.profile_image.split('/').pop()}</span>{' '}
+                        (<button type="button" onClick={() => setImageModalOpen(true)} className="text-primary hover:underline font-medium">View</button>)
                       </p>
                     )}
                   </FormField>
@@ -173,7 +176,7 @@ const TrainerProfileForm = ({ initialValues = {}, onSubmit, isLoading, isEditMod
                   </FormField>
 
                   <FormField>
-                    <FormLabel>Certification Document (PDF Only, Optional for edit)</FormLabel>
+                    <FormLabel>Certification Document (PDF Only) *</FormLabel>
                     <input 
                       type="file" 
                       accept="application/pdf"
@@ -221,7 +224,17 @@ const TrainerProfileForm = ({ initialValues = {}, onSubmit, isLoading, isEditMod
             
           </form>
         </CardContent>
-      </Card>
+
+      <Modal isOpen={isImageModalOpen} onClose={() => setImageModalOpen(false)} title="Profile Image">
+        <div className="flex justify-center bg-gray-900 rounded-lg p-2">
+          <img 
+            src={initialValues.profile_image} 
+            alt="Profile Preview" 
+            className="max-w-full max-h-[60vh] rounded-md object-contain" 
+          />
+        </div>
+      </Modal>
+    </Card>
     </div>
   );
 };

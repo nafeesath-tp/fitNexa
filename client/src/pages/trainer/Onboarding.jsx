@@ -36,7 +36,7 @@ const Onboarding = () => {
         toast.error(response.message || 'Failed to submit application.');
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'An error occurred during onboarding.');
+      toast.error(error.response?.data?.message || error.response?.data?.detail || 'An error occurred during onboarding.');
     } finally {
       setIsLoading(false);
     }

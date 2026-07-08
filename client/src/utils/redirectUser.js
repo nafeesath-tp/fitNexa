@@ -14,8 +14,7 @@ export const getHomeRoute = (user) => {
             } else if (user.approval_status === 'PENDING') {
                 return '/trainer/pending';
             } else if (user.approval_status === 'REJECTED') {
-                // If we had a reapply route, it would go here. For now, onboarding/edit
-                return '/trainer/onboarding';
+                return '/trainer/rejected';
             }
             // PENDING_ONBOARDING or no profile yet
             return '/trainer/onboarding';

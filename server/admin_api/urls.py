@@ -2,7 +2,7 @@ from django.urls import path
 from .views import (
     AdminTrainerListAPIView, AdminTrainerDetailAPIView, AdminTrainerStatusAPIView,
     AdminSpecializationListCreateAPIView, AdminSpecializationRetrieveUpdateDestroyAPIView,
-    AdminClientListAPIView, AdminClientDetailAPIView
+    AdminClientListAPIView, AdminClientDetailAPIView, AdminClientStatusAPIView
 )
 
 urlpatterns = [
@@ -18,4 +18,5 @@ urlpatterns = [
     # Client Management
     path('clients/', AdminClientListAPIView.as_view(), name='admin-client-list'),
     path('clients/<int:id>/', AdminClientDetailAPIView.as_view(), name='admin-client-detail'),
+    path('clients/<int:id>/status/', AdminClientStatusAPIView.as_view(), name='admin-client-status'),
 ]

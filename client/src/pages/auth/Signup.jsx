@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { signupSchema } from '../../validation/signupSchema';
 import { useNavigate, Link } from 'react-router-dom';
@@ -18,7 +18,7 @@ const Signup = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
 
-  const { register, handleSubmit, formState: { errors } } = useForm({
+  const { register, handleSubmit, control, formState: { errors } } = useForm({
     resolver: zodResolver(signupSchema),
     defaultValues: {
       role: 'CLIENT',
@@ -95,22 +95,30 @@ const Signup = () => {
             </FormField>
 
             <FormSection title="Account Type" className="mt-6 p-4">
-              <RadioGroup className="grid-cols-2">
-                <RadioOption 
-                  value="CLIENT"
-                  label="Client"
-                  icon={User}
-                  error={errors.role}
-                  {...register('role')}
-                />
-                <RadioOption 
-                  value="TRAINER"
-                  label="Trainer"
-                  icon={ShieldAlert}
-                  error={errors.role}
-                  {...register('role')}
-                />
-              </RadioGroup>
+              <Controller
+                name="role"
+                control={control}
+                render={({ field: { onChange, value } }) => (
+                  <RadioGroup className="grid-cols-2">
+                    <RadioOption 
+                      value="CLIENT"
+                      label="Client"
+                      icon={User}
+                      checked={value === 'CLIENT'}
+                      onChange={() => onChange('CLIENT')}
+                      error={errors.role}
+                    />
+                    <RadioOption 
+                      value="TRAINER"
+                      label="Trainer"
+                      icon={ShieldAlert}
+                      checked={value === 'TRAINER'}
+                      onChange={() => onChange('TRAINER')}
+                      error={errors.role}
+                    />
+                  </RadioGroup>
+                )}
+              />
               <FormError error={errors.role} />
             </FormSection>
 

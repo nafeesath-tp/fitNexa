@@ -36,7 +36,7 @@ const ProfileSetup = () => {
         toast.error(response.message || 'Failed to create profile.');
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'An error occurred during profile setup.');
+      toast.error(error.response?.data?.message || error.response?.data?.detail || 'An error occurred during profile setup.');
     } finally {
       setIsLoading(false);
     }

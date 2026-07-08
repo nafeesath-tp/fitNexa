@@ -20,7 +20,7 @@ const Login = () => {
   const setAuth = useAuthStore((state) => state.setAuth);
   const [isLoading, setIsLoading] = useState(false);
 
-  const { register, handleSubmit, formState: { errors } } = useForm({
+  const { register, handleSubmit, setError, formState: { errors } } = useForm({
     resolver: zodResolver(loginSchema),
   });
 
@@ -38,10 +38,26 @@ const Login = () => {
         const route = getHomeRoute(response.data);
         navigate(route, { replace: true });
       } else {
-        toast.error(response.message || 'Invalid credentials.');
+        setError('root', { type: 'manual', message: response.message || 'Invalid credentials.' });
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'An error occurred during login.');
+      const backendErrors = error.response?.data?.errors;
+      if (backendErrors) {
+        if (backendErrors.email) {
+          setError('email', { type: 'manual', message: backendErrors.email });
+        }
+        if (backendErrors.password) {
+          setError('password', { type: 'manual', message: backendErrors.password });
+        }
+        
+        // If the error isn't on email or password, show it at the root
+        if (!backendErrors.email && !backendErrors.password) {
+          const firstError = Object.values(backendErrors)[0];
+          setError('root', { type: 'manual', message: firstError || error.response?.data?.message || 'An error occurred during login.' });
+        }
+      } else {
+        setError('root', { type: 'manual', message: error.response?.data?.message || 'An error occurred during login.' });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -72,18 +88,31 @@ const Login = () => {
                 {...register('email')} 
                 error={errors.email} 
               />
-              <FormError error={errors.email} />
+              <FormError message={errors.email?.message} />
             </FormField>
             
             <FormField>
-              <FormLabel>Password</FormLabel>
+              <div className="flex items-center justify-between">
+                <FormLabel>Password</FormLabel>
+              </div>
               <PasswordInput 
                 placeholder="••••••••" 
                 {...register('password')} 
                 error={errors.password} 
               />
-              <FormError error={errors.password} />
+              <div className="flex justify-end mt-1">
+                <Link to="/forgot-password" className="text-xs font-semibold text-primary hover:text-primary-hover transition-colors">
+                  Forgot password?
+                </Link>
+              </div>
+              <FormError message={errors.password?.message} />
             </FormField>
+
+            {errors.root && (
+              <div className="p-3 bg-danger/10 border border-danger/20 rounded-md text-center animate-in fade-in slide-in-from-top-1">
+                <p className="text-sm font-medium text-danger">{errors.root.message}</p>
+              </div>
+            )}
 
             <Button type="submit" isLoading={isLoading} className="w-full mt-6">
               Log In

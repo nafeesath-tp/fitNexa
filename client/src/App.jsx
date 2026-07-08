@@ -11,8 +11,10 @@ import PublicRoute from './routes/PublicRoute';
 import AuthLayout from './layouts/AuthLayout';
 import Landing from './pages/auth/Landing';
 import Login from './pages/auth/Login';
+import AdminLogin from './pages/admin/AdminLogin';
 import Signup from './pages/auth/Signup';
 import VerifyOTP from './pages/auth/VerifyOTP';
+import ForgotPassword from './pages/auth/ForgotPassword';
 import ClientLayout from './layouts/ClientLayout';
 import ProfileSetup from './pages/client/ProfileSetup';
 import Home from './pages/client/Home';
@@ -20,6 +22,7 @@ import EditProfile from './pages/client/EditProfile';
 import TrainerLayout from './layouts/TrainerLayout';
 import TrainerOnboarding from './pages/trainer/Onboarding';
 import TrainerPending from './pages/trainer/Pending';
+import TrainerRejected from './pages/trainer/Rejected';
 import TrainerHome from './pages/trainer/Home';
 import TrainerEditProfile from './pages/trainer/EditProfile';
 import AdminLayout from './layouts/AdminLayout';
@@ -68,8 +71,10 @@ function App() {
           <Route element={<AuthLayout />}>
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/admin-login" element={<AdminLogin />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/verify-otp" element={<VerifyOTP />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
           </Route>
         </Route>
 
@@ -87,6 +92,7 @@ function App() {
           <Route path="/trainer" element={<TrainerLayout />}>
             <Route path="onboarding" element={<TrainerOnboarding />} />
             <Route path="pending" element={<TrainerPending />} />
+            <Route path="rejected" element={<TrainerRejected />} />
             <Route path="home" element={<TrainerHome />} />
             <Route path="profile" element={<TrainerEditProfile />} />
           </Route>

@@ -25,11 +25,12 @@ export const FormLabel = ({ children, className, htmlFor }) => (
   </label>
 );
 
-export const FormError = ({ message, className }) => {
-  if (!message) return null;
+export const FormError = ({ message, error, className }) => {
+  const displayMessage = message || error?.message;
+  if (!displayMessage) return null;
   return (
     <p className={cn("text-sm text-danger mt-1", className)}>
-      {message}
+      {displayMessage}
     </p>
   );
 };

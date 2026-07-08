@@ -1,19 +1,23 @@
+
+
+
 import React from 'react';
 import { Loader2 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
-const Button = React.forwardRef(({ 
-  children, 
-  variant = 'primary', 
+const Button = React.forwardRef(({
+  children,
+  variant = 'primary',
   size = 'md',
-  isLoading = false, 
-  disabled, 
+  isLoading = false,
+  disabled,
   className,
-  ...props 
+  type = 'button',
+  ...props
 }, ref) => {
-  
+
   const baseStyles = "inline-flex items-center justify-center font-semibold rounded-lg transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50 disabled:cursor-not-allowed";
-  
+
   const variants = {
     primary: "bg-primary text-background hover:bg-primary-hover shadow-md shadow-primary/20",
     secondary: "bg-secondary text-white hover:bg-secondary-hover border border-white/5",
@@ -31,6 +35,7 @@ const Button = React.forwardRef(({
   return (
     <button
       ref={ref}
+      type={type}
       disabled={disabled || isLoading}
       className={cn(baseStyles, variants[variant], sizes[size], className)}
       {...props}

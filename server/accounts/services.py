@@ -89,18 +89,13 @@ def login_user(validated_data):
     email = validated_data["email"]
     password = validated_data["password"]
 
-    # Use a generic message to prevent user enumeration
-    invalid_credentials_error = serializers.ValidationError(
-        {"email": "Invalid email or password."}
-    )
-
     try:
         user = User.objects.get(email=email)
     except User.DoesNotExist:
-        raise invalid_credentials_error
+        raise serializers.ValidationError({"email": "No account found with this email."})
 
     if not user.check_password(password):
-        raise invalid_credentials_error
+        raise serializers.ValidationError({"password": "Incorrect password."})
 
     if not user.is_verified:
         raise serializers.ValidationError(

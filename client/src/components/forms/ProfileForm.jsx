@@ -1,5 +1,8 @@
+
+
+
 import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { clientProfileSchema } from '../../validation/clientProfileSchema';
 import { Target, Activity, Dumbbell, Zap } from 'lucide-react';
@@ -10,11 +13,13 @@ import Select from '../ui/Select';
 import RadioGroup, { RadioOption } from '../ui/RadioGroup';
 import { FormField, FormLabel, FormError, FormSection } from '../ui/Form';
 import { Card, CardContent } from '../ui/Card';
+import Modal from '../ui/Modal';
 
 const ProfileForm = ({ initialValues = {}, onSubmit, isLoading, isEditMode = false }) => {
   const [step, setStep] = useState(1);
+  const [isImageModalOpen, setImageModalOpen] = useState(false);
 
-  const { register, handleSubmit, trigger, formState: { errors } } = useForm({
+  const { register, handleSubmit, trigger, control, formState: { errors } } = useForm({
     resolver: zodResolver(clientProfileSchema),
     mode: 'onTouched',
     defaultValues: initialValues
@@ -24,7 +29,7 @@ const ProfileForm = ({ initialValues = {}, onSubmit, isLoading, isEditMode = fal
     let fieldsToValidate = [];
     if (step === 1) fieldsToValidate = ['first_name', 'last_name', 'phone', 'profile_image'];
     if (step === 2) fieldsToValidate = ['date_of_birth', 'gender', 'height_cm', 'weight_kg', 'target_weight_kg'];
-    
+
     const isStepValid = await trigger(fieldsToValidate);
     if (isStepValid) {
       setStep((prev) => prev + 1);
@@ -36,66 +41,80 @@ const ProfileForm = ({ initialValues = {}, onSubmit, isLoading, isEditMode = fal
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto">
-      <div className="mb-8 text-center">
-        <h2 className="text-3xl font-bold text-gray-100 mb-2">
-          {isEditMode ? 'Edit Profile' : 'Setup Your Profile'}
-        </h2>
-        <p className="text-muted">Step {step} of 3</p>
-        
-        {/* Progress Bar */}
-        <div className="w-full bg-surface h-2 rounded-full mt-4 overflow-hidden border border-border/10">
-          <div 
-            className="bg-primary h-full rounded-full transition-all duration-300 ease-out"
-            style={{ width: `${(step / 3) * 100}%` }}
-          />
-        </div>
-      </div>
+    <div className={isEditMode ? 'w-full' : 'w-full max-w-2xl mx-auto'}>
+      {!isEditMode && (
+        <div className="mb-8 text-center">
+          <h2 className="text-3xl font-bold text-gray-100 mb-2">
+            Setup Your Profile
+          </h2>
+          <p className="text-muted">Step {step} of 3</p>
 
-      <Card>
-        <CardContent className="pt-6">
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            
+          {/* Progress Bar */}
+          <div className="w-full bg-surface h-2 rounded-full mt-4 overflow-hidden border border-border/10">
+            <div
+              className="bg-primary h-full rounded-full transition-all duration-300 ease-out"
+              style={{ width: `${(step / 3) * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      <Card className={isEditMode ? 'border-none bg-transparent shadow-none' : ''}>
+        <CardContent className={isEditMode ? 'p-0' : 'pt-6'}>
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            onKeyDown={(e) => {
+              if (
+                e.key === 'Enter' &&
+                e.target.tagName !== 'BUTTON' &&
+                e.target.tagName !== 'TEXTAREA'
+              ) {
+                e.preventDefault();
+              }
+            }}
+            className="space-y-8"
+          >
+
             {/* STEP 1: Personal Info */}
-            {step === 1 && (
+            {(isEditMode || step === 1) && (
               <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                 <FormSection title="Personal Information" description="Tell us about yourself">
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <FormField>
                       <FormLabel>First Name *</FormLabel>
-                      <Input 
-                        placeholder="John" 
-                        {...register('first_name')} 
-                        error={errors.first_name} 
+                      <Input
+                        placeholder="John"
+                        {...register('first_name')}
+                        error={errors.first_name}
                       />
                       <FormError error={errors.first_name} />
                     </FormField>
-                    
+
                     <FormField>
                       <FormLabel>Last Name *</FormLabel>
-                      <Input 
-                        placeholder="Doe" 
-                        {...register('last_name')} 
-                        error={errors.last_name} 
+                      <Input
+                        placeholder="Doe"
+                        {...register('last_name')}
+                        error={errors.last_name}
                       />
                       <FormError error={errors.last_name} />
                     </FormField>
                   </div>
-                  
+
                   <FormField>
                     <FormLabel>Phone Number</FormLabel>
-                    <Input 
-                      placeholder="+1234567890" 
-                      {...register('phone')} 
-                      error={errors.phone} 
+                    <Input
+                      placeholder="+1234567890"
+                      {...register('phone')}
+                      error={errors.phone}
                     />
                     <FormError error={errors.phone} />
                   </FormField>
 
                   <FormField>
                     <FormLabel>Profile Image (Optional)</FormLabel>
-                    <input 
-                      type="file" 
+                    <input
+                      type="file"
                       accept="image/jpeg, image/png, image/webp"
                       className="block w-full text-sm text-gray-300
                         file:mr-4 file:py-2 file:px-4
@@ -107,10 +126,11 @@ const ProfileForm = ({ initialValues = {}, onSubmit, isLoading, isEditMode = fal
                       {...register('profile_image')}
                     />
                     <FormError error={errors.profile_image} />
-                    
+
                     {isEditMode && initialValues.profile_image && typeof initialValues.profile_image === 'string' && (
                       <p className="text-sm text-muted mt-2">
-                        Current image: <a href={initialValues.profile_image} target="_blank" rel="noreferrer" className="text-primary hover:underline">View</a>
+                        Current image: <span className="text-gray-300 font-mono text-xs">{initialValues.profile_image.split('/').pop()}</span>{' '}
+                        (<button type="button" onClick={() => setImageModalOpen(true)} className="text-primary hover:underline font-medium">View</button>)
                       </p>
                     )}
                   </FormField>
@@ -119,20 +139,20 @@ const ProfileForm = ({ initialValues = {}, onSubmit, isLoading, isEditMode = fal
             )}
 
             {/* STEP 2: Basic & Health */}
-            {step === 2 && (
+            {(isEditMode || step === 2) && (
               <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                 <FormSection title="Body & Health" description="Vital stats to personalize your plan">
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <FormField>
                       <FormLabel>Date of Birth</FormLabel>
-                      <Input 
+                      <Input
                         type="date"
-                        {...register('date_of_birth')} 
-                        error={errors.date_of_birth} 
+                        {...register('date_of_birth')}
+                        error={errors.date_of_birth}
                       />
                       <FormError error={errors.date_of_birth} />
                     </FormField>
-                    
+
                     <FormField>
                       <FormLabel>Gender</FormLabel>
                       <Select {...register('gender')} error={errors.gender}>
@@ -149,36 +169,36 @@ const ProfileForm = ({ initialValues = {}, onSubmit, isLoading, isEditMode = fal
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <FormField>
                       <FormLabel>Height (cm)</FormLabel>
-                      <Input 
+                      <Input
                         type="number"
                         placeholder="175"
-                        {...register('height_cm')} 
-                        error={errors.height_cm} 
+                        {...register('height_cm')}
+                        error={errors.height_cm}
                       />
                       <FormError error={errors.height_cm} />
                     </FormField>
-                    
+
                     <FormField>
                       <FormLabel>Current Weight (kg)</FormLabel>
-                      <Input 
+                      <Input
                         type="number"
                         placeholder="70"
                         step="0.1"
-                        {...register('weight_kg')} 
-                        error={errors.weight_kg} 
+                        {...register('weight_kg')}
+                        error={errors.weight_kg}
                       />
                       <FormError error={errors.weight_kg} />
                     </FormField>
                   </div>
-                  
+
                   <FormField>
                     <FormLabel>Target Weight (kg)</FormLabel>
-                    <Input 
+                    <Input
                       type="number"
                       placeholder="65"
                       step="0.1"
-                      {...register('target_weight_kg')} 
-                      error={errors.target_weight_kg} 
+                      {...register('target_weight_kg')}
+                      error={errors.target_weight_kg}
                     />
                     <FormError error={errors.target_weight_kg} />
                   </FormField>
@@ -187,10 +207,10 @@ const ProfileForm = ({ initialValues = {}, onSubmit, isLoading, isEditMode = fal
             )}
 
             {/* STEP 3: Fitness Goals */}
-            {step === 3 && (
+            {(isEditMode || step === 3) && (
               <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                 <FormSection title="Fitness Goals" description="What do you want to achieve?">
-                  
+
                   <FormField>
                     <FormLabel>Primary Fitness Goal</FormLabel>
                     <Select {...register('fitness_goal')} error={errors.fitness_goal}>
@@ -223,11 +243,35 @@ const ProfileForm = ({ initialValues = {}, onSubmit, isLoading, isEditMode = fal
 
                   <FormField>
                     <FormLabel>Experience Level</FormLabel>
-                    <RadioGroup className="grid-cols-3">
-                      <RadioOption value="BEGINNER" label="Beginner" error={errors.experience_level} {...register('experience_level')} />
-                      <RadioOption value="INTERMEDIATE" label="Intermediate" error={errors.experience_level} {...register('experience_level')} />
-                      <RadioOption value="ADVANCED" label="Advanced" error={errors.experience_level} {...register('experience_level')} />
-                    </RadioGroup>
+                    <Controller
+                      name="experience_level"
+                      control={control}
+                      render={({ field: { onChange, value } }) => (
+                        <RadioGroup className="grid-cols-3">
+                          <RadioOption
+                            value="BEGINNER"
+                            label="Beginner"
+                            checked={value === 'BEGINNER'}
+                            onChange={() => onChange('BEGINNER')}
+                            error={errors.experience_level}
+                          />
+                          <RadioOption
+                            value="INTERMEDIATE"
+                            label="Intermediate"
+                            checked={value === 'INTERMEDIATE'}
+                            onChange={() => onChange('INTERMEDIATE')}
+                            error={errors.experience_level}
+                          />
+                          <RadioOption
+                            value="ADVANCED"
+                            label="Advanced"
+                            checked={value === 'ADVANCED'}
+                            onChange={() => onChange('ADVANCED')}
+                            error={errors.experience_level}
+                          />
+                        </RadioGroup>
+                      )}
+                    />
                     <FormError error={errors.experience_level} />
                   </FormField>
 
@@ -244,10 +288,10 @@ const ProfileForm = ({ initialValues = {}, onSubmit, isLoading, isEditMode = fal
                     </Select>
                     <FormError error={errors.diet_preference} />
                   </FormField>
-                  
+
                   <FormField>
                     <FormLabel>Medical Conditions / Injuries</FormLabel>
-                    <textarea 
+                    <textarea
                       className="flex w-full rounded-lg border border-border/10 bg-background px-3 py-2 text-sm text-gray-100 placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200"
                       rows="3"
                       placeholder="Any medical conditions or injuries the trainer should know about"
@@ -260,28 +304,46 @@ const ProfileForm = ({ initialValues = {}, onSubmit, isLoading, isEditMode = fal
             )}
 
             {/* Navigation Buttons */}
-            <div className="flex justify-between pt-6 border-t border-border/10">
-              {step > 1 ? (
-                <Button type="button" onClick={prevStep} variant="secondary">
-                  Back
-                </Button>
-              ) : (
-                <div /> // Spacer
-              )}
-              
-              {step < 3 ? (
-                <Button type="button" onClick={nextStep}>
-                  Next Step
-                </Button>
-              ) : (
+            {!isEditMode ? (
+              <div className="flex justify-between pt-6 border-t border-border/10">
+                {step > 1 ? (
+                  <Button type="button" onClick={prevStep} variant="secondary">
+                    Back
+                  </Button>
+                ) : (
+                  <div /> // Spacer
+                )}
+
+                {step < 3 ? (
+                  <Button type="button" onClick={nextStep}>
+                    Next Step
+                  </Button>
+                ) : (
+                  <Button type="submit" isLoading={isLoading}>
+                    Complete Setup
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="flex justify-end pt-6 border-t border-border/10 mt-8">
                 <Button type="submit" isLoading={isLoading}>
-                  {isEditMode ? 'Save Changes' : 'Complete Setup'}
+                  Save Changes
                 </Button>
-              )}
-            </div>
-            
+              </div>
+            )}
+
           </form>
         </CardContent>
+
+        <Modal isOpen={isImageModalOpen} onClose={() => setImageModalOpen(false)} title="Profile Image">
+          <div className="flex justify-center bg-gray-900 rounded-lg p-2">
+            <img
+              src={initialValues.profile_image}
+              alt="Profile Preview"
+              className="max-w-full max-h-[60vh] rounded-md object-contain"
+            />
+          </div>
+        </Modal>
       </Card>
     </div>
   );

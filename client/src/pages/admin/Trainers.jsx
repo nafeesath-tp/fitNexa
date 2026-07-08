@@ -232,7 +232,7 @@ const Trainers = () => {
                   onClick={() => handleStatusChange(selectedTrainer, 'REJECTED')}
                 >
                   <XCircle className="w-4 h-4 mr-2" />
-                  Reject
+                  {selectedTrainer.approval_status === 'APPROVED' ? 'Revoke Access' : 'Reject'}
                 </Button>
               )}
               {selectedTrainer.approval_status !== 'APPROVED' && (

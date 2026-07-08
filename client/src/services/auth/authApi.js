@@ -20,5 +20,20 @@ export const authApi = {
     checkAuth: async () => {
         const response = await api.get('/api/auth/me/');
         return response.data;
+    },
+
+    forgotPassword: async (data) => {
+        const response = await api.post('/api/auth/forgot-password/', data);
+        return response.data;
+    },
+
+    verifyResetOtp: async (data) => {
+        const response = await api.post('/api/auth/verify-reset-otp/', data);
+        return response.data;
+    },
+
+    resetPassword: async (data) => {
+        const response = await api.post('/api/auth/reset-password/', data);
+        return response.data;
     }
 };

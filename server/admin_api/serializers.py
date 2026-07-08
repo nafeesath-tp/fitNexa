@@ -45,6 +45,7 @@ class AdminTrainerStatusUpdateSerializer(serializers.ModelSerializer):
 
 class AdminClientListSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source='user.email', read_only=True)
+    is_active = serializers.BooleanField(source='user.is_active', read_only=True)
     name = serializers.SerializerMethodField()
 
     class Meta:
@@ -57,6 +58,7 @@ class AdminClientListSerializer(serializers.ModelSerializer):
             'fitness_goal',
             'experience_level',
             'is_profile_completed',
+            'is_active',
         ]
         read_only_fields = fields
 
@@ -65,6 +67,7 @@ class AdminClientListSerializer(serializers.ModelSerializer):
 
 class AdminClientDetailSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source='user.email', read_only=True)
+    is_active = serializers.BooleanField(source='user.is_active', read_only=True)
 
     class Meta:
         model = ClientProfile
@@ -86,8 +89,12 @@ class AdminClientDetailSerializer(serializers.ModelSerializer):
             'diet_preference',
             'medical_condition',
             'is_profile_completed',
+            'is_active',
             'profile_image',
             'created_at',
             'updated_at',
         ]
         read_only_fields = fields
+
+class AdminClientStatusUpdateSerializer(serializers.Serializer):
+    is_active = serializers.BooleanField()
