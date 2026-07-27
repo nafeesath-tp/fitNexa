@@ -6,8 +6,9 @@ import toast from 'react-hot-toast';
 import { 
   LayoutDashboard, Users, UserCog, Briefcase, 
   CheckCircle, DollarSign, Megaphone, FileText, 
-  Dumbbell, LogOut, Search, Activity
+  Dumbbell, LogOut, Search, Activity, CreditCard
 } from 'lucide-react';
+
 import { cn } from '../utils/cn';
 
 const AdminLayout = () => {
@@ -27,10 +28,11 @@ const AdminLayout = () => {
   };
 
   const navLinks = [
-    { label: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
-    { label: 'Users', path: '/admin/clients', icon: Users },
-    { label: 'Trainers', path: '/admin/trainers', icon: UserCog },
-    { label: 'Specialisation', path: '/admin/specializations', icon: Briefcase },
+    { label: 'Dashboard',     path: '/admin/dashboard',      icon: LayoutDashboard },
+    { label: 'Users',         path: '/admin/clients',         icon: Users           },
+    { label: 'Trainers',      path: '/admin/trainers',        icon: UserCog         },
+    { label: 'Specialisation',path: '/admin/specializations', icon: Briefcase       },
+    { label: 'Subscriptions', path: '/admin/subscriptions',   icon: CreditCard      },
   ];
 
   return (

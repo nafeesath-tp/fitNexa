@@ -30,6 +30,9 @@ import AdminDashboard from './pages/admin/Dashboard';
 import AdminTrainers from './pages/admin/Trainers';
 import AdminClients from './pages/admin/Clients';
 import AdminSpecializations from './pages/admin/Specializations';
+import AdminSubscriptions from './pages/admin/Subscriptions';
+import ClientPlans from './pages/client/Plans';
+import ClientSubscription from './pages/client/SubscriptionHistory';
 
 // --- Placeholder Pages (To be built later) ---
 const Placeholder = ({ title }) => <div><h2>{title} Page</h2></div>;
@@ -84,6 +87,8 @@ function App() {
             <Route path="setup" element={<ProfileSetup />} />
             <Route path="home" element={<Home />} />
             <Route path="profile" element={<EditProfile />} />
+            <Route path="plans" element={<ClientPlans />} />
+            <Route path="subscription" element={<ClientSubscription />} />
           </Route>
         </Route>
 
@@ -105,6 +110,7 @@ function App() {
             <Route path="trainers" element={<AdminTrainers />} />
             <Route path="clients" element={<AdminClients />} />
             <Route path="specializations" element={<AdminSpecializations />} />
+            <Route path="subscriptions" element={<AdminSubscriptions />} />
           </Route>
         </Route>
 

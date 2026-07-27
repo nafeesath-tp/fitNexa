@@ -24,8 +24,10 @@ const ClientLayout = () => {
   };
 
   const navLinks = [
-    { label: 'Home', path: '/client/home' },
-    { label: 'My Profile', path: '/client/profile' }
+    { label: 'Home',          path: '/client/home'         },
+    { label: 'Plans',         path: '/client/plans'        },
+    { label: 'Subscription',  path: '/client/subscription' },
+    { label: 'My Profile',    path: '/client/profile'      },
   ];
 
   return (
