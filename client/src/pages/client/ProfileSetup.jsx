@@ -4,11 +4,13 @@ import toast from 'react-hot-toast';
 
 import { clientApi } from '../../services/client/clientApi';
 import { useClientStore } from '../../stores/clientStore';
+import { useAuthStore } from '../../stores/authStore';
 import ProfileForm from '../../components/forms/ProfileForm';
 
 const ProfileSetup = () => {
   const navigate = useNavigate();
   const setProfile = useClientStore((state) => state.setProfile);
+  const { user, setAuth } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
 
   const onSubmit = async (data) => {
@@ -31,12 +33,24 @@ const ProfileSetup = () => {
       if (response.success) {
         toast.success(response.message || 'Profile created successfully!');
         setProfile(response.data);
+        // Mark profile as completed in the auth store so route guards
+        // don't redirect the user back to /client/setup.
+        setAuth({ ...user, is_profile_completed: true });
         navigate('/client/home', { replace: true });
       } else {
         toast.error(response.message || 'Failed to create profile.');
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || error.response?.data?.detail || 'An error occurred during profile setup.');
+      const responseData = error.response?.data;
+      if (responseData?.errors && Object.keys(responseData.errors).length > 0) {
+        // Show each field error individually
+        Object.entries(responseData.errors).forEach(([field, messages]) => {
+          const msg = Array.isArray(messages) ? messages[0] : messages;
+          toast.error(`${field}: ${msg}`);
+        });
+      } else {
+        toast.error(responseData?.message || responseData?.detail || 'An error occurred during profile setup.');
+      }
     } finally {
       setIsLoading(false);
     }

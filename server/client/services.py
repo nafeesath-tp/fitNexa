@@ -57,12 +57,18 @@ def _bmi_category(bmi):
 
 def create_client_profile(user, validated_data):
     """
-    Create a ClientProfile for the given user.
+    Create (or complete) a ClientProfile for the given user.
 
     Business rules:
     - User must have role == CLIENT.
-    - User must not already have a profile.
-    - Sets is_profile_completed = True on creation.
+    - If no profile exists → create a new one.
+    - If a profile exists with is_profile_completed=False (e.g. created by
+      Google signup with minimal data) → update it and mark as completed.
+      This is the "Google CLIENT" path: Google signup pre-creates a profile
+      with first_name/last_name, but the user still needs to fill in their
+      health and fitness data.
+    - If a profile already exists AND is_profile_completed=True → reject
+      (use the PATCH /api/client/profile/ endpoint to edit an existing one).
 
     Returns a dict containing the saved profile and the calculated BMI.
     """
@@ -72,17 +78,29 @@ def create_client_profile(user, validated_data):
             {"detail": "Only clients can create a client profile."}
         )
 
-    # Rule 2: profile must not already exist
-    if ClientProfile.objects.filter(user=user).exists():
+    existing = ClientProfile.objects.filter(user=user).first()
+
+    if existing is not None and existing.is_profile_completed:
+        # Already fully set up — direct the user to the edit endpoint
         raise serializers.ValidationError(
-            {"detail": "You have already created your profile."}
+            {"detail": "You have already created your profile. Use the edit page to make changes."}
         )
 
-    profile = ClientProfile.objects.create(
-        user=user,
-        is_profile_completed=True,
-        **validated_data,
-    )
+    if existing is not None:
+        # Profile exists but is incomplete (e.g. created by Google signup).
+        # Apply all supplied fields on top of existing data.
+        for field, value in validated_data.items():
+            setattr(existing, field, value)
+        existing.is_profile_completed = True
+        existing.save()
+        profile = existing
+    else:
+        # Brand-new profile (email-signup flow)
+        profile = ClientProfile.objects.create(
+            user=user,
+            is_profile_completed=True,
+            **validated_data,
+        )
 
     bmi = calculate_bmi(profile.weight_kg, profile.height_cm)
 

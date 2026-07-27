@@ -14,10 +14,22 @@ def submit_trainer_onboarding(user, validated_data):
 
     Returns the created TrainerProfile.
     """
-    if TrainerProfile.objects.filter(user=user).exists():
-        raise serializers.ValidationError(
-            {"detail": "You have already submitted your onboarding profile."}
-        )
+    profile = TrainerProfile.objects.filter(user=user).first()
+    
+    if profile:
+        if profile.approval_status != TrainerProfile.ApprovalStatus.REJECTED:
+            raise serializers.ValidationError(
+                {"detail": "You have already submitted your onboarding profile."}
+            )
+        
+        # Update existing rejected profile
+        for attr, value in validated_data.items():
+            setattr(profile, attr, value)
+            
+        profile.approval_status = TrainerProfile.ApprovalStatus.PENDING
+        profile.rejection_reason = None
+        profile.save()
+        return profile
 
     profile = TrainerProfile.objects.create(
         user=user,

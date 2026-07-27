@@ -13,21 +13,46 @@ from .serializers import AdminTrainerProfileSerializer, AdminTrainerStatusUpdate
 class AdminTrainerListAPIView(generics.ListAPIView):
     """
     GET /api/admin/trainers/
-    List all trainers.
+    List all trainers with their profiles.
+    Returns { success, data: [...] } for consistency with all other endpoints.
     """
-    queryset = TrainerProfile.objects.all().order_by('-created_at')
-    serializer_class = AdminTrainerProfileSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get(self, request):
+        profiles = TrainerProfile.objects.select_related('user', 'specialization').order_by('-created_at')
+        serializer = AdminTrainerProfileSerializer(profiles, many=True, context={'request': request})
+        return Response(
+            {
+                "success": True,
+                "data": serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )
 
 class AdminTrainerDetailAPIView(generics.RetrieveAPIView):
     """
     GET /api/admin/trainers/<id>/
     Retrieve a specific trainer profile.
+    Returns { success, data: {...} } for consistency.
     """
-    queryset = TrainerProfile.objects.all()
-    serializer_class = AdminTrainerProfileSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
-    lookup_field = 'id'
+
+    def get(self, request, id):
+        try:
+            profile = TrainerProfile.objects.select_related('user', 'specialization').get(id=id)
+        except TrainerProfile.DoesNotExist:
+            return Response(
+                {"success": False, "message": "Trainer profile not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        serializer = AdminTrainerProfileSerializer(profile, context={'request': request})
+        return Response(
+            {
+                "success": True,
+                "data": serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )
 
 class AdminTrainerStatusAPIView(APIView):
     """

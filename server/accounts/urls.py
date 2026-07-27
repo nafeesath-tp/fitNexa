@@ -3,7 +3,7 @@ from django.urls import path
 from .views import (
     SignupAPIView, VerifyOTPAPIView, ResendOTPAPIView, LoginAPIView, LogoutAPIView,
     ForgotPasswordAPIView, VerifyResetOTPAPIView, ResetPasswordAPIView,
-    MeAPIView,
+    MeAPIView, GoogleAuthAPIView, GoogleSignupAPIView, TokenRefreshAPIView,
 )
 
 urlpatterns = [
@@ -16,4 +16,7 @@ urlpatterns = [
     path("verify-reset-otp/", VerifyResetOTPAPIView.as_view(), name="verify-reset-otp"),
     path("reset-password/", ResetPasswordAPIView.as_view(), name="reset-password"),
     path("me/", MeAPIView.as_view(), name="me"),
+    path("token/refresh/", TokenRefreshAPIView.as_view(), name="token-refresh"),
+    path("google-auth/", GoogleAuthAPIView.as_view(), name="google-auth"),
+    path("google-signup/", GoogleSignupAPIView.as_view(), name="google-signup"),
 ]

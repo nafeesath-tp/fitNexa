@@ -1,7 +1,5 @@
 
 
-
-
 from rest_framework import serializers
 
 from accounts.models import Specialization, TrainerProfile
@@ -47,7 +45,7 @@ class TrainerProfileSerializer(serializers.ModelSerializer):
     specialization = SpecializationSerializer(read_only=True)
 
     email = serializers.EmailField(source="user.email", read_only=True)
-    
+
     certificate = serializers.SerializerMethodField()
     certificate_download = serializers.SerializerMethodField()
     profile_image = serializers.SerializerMethodField()
@@ -67,10 +65,11 @@ class TrainerProfileSerializer(serializers.ModelSerializer):
             "certificate",
             "certificate_download",
             "approval_status",
+            "rejection_reason",
             "created_at",
         ]
         read_only_fields = fields
-    
+
     def get_certificate(self, obj):
         """Return URL for viewing certificate (converted to image for Cloudinary free tier)."""
         if obj.certificate:

@@ -17,35 +17,41 @@ class AdminSpecializationSerializer(serializers.ModelSerializer):
         """Return the number of trainers using this specialization."""
         return obj.trainers.count()
 
+class AdminTrainerUserSerializer(serializers.Serializer):
+    """Minimal user info nested inside a trainer profile response."""
+    id    = serializers.IntegerField(read_only=True)
+    email = serializers.EmailField(read_only=True)
+
+
 class AdminTrainerProfileSerializer(serializers.ModelSerializer):
-    email = serializers.EmailField(source='user.email', read_only=True)
+    user = AdminTrainerUserSerializer(read_only=True)
     specialization_name = serializers.CharField(source='specialization.name', read_only=True)
     certificate = serializers.SerializerMethodField()
     certificate_download = serializers.SerializerMethodField()
     profile_image = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = TrainerProfile
         fields = [
             'id',
             'user',
-            'email',
+            'specialization_name',
             'first_name',
             'last_name',
             'phone',
             'bio',
             'experience',
             'specialization',
-            'specialization_name',
             'profile_image',
             'certificate',
             'certificate_download',
             'approval_status',
+            'rejection_reason',
             'created_at',
             'updated_at',
         ]
         read_only_fields = fields
-    
+
     def get_certificate(self, obj):
         """Return URL for viewing certificate (converted to image for Cloudinary free tier)."""
         if obj.certificate:
@@ -101,12 +107,18 @@ class AdminTrainerProfileSerializer(serializers.ModelSerializer):
 class AdminTrainerStatusUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = TrainerProfile
-        fields = ['approval_status']
+        fields = ['approval_status', 'rejection_reason']
         
     def validate_approval_status(self, value):
         if value not in [TrainerProfile.ApprovalStatus.APPROVED, TrainerProfile.ApprovalStatus.REJECTED]:
             raise serializers.ValidationError("Status must be either APPROVED or REJECTED.")
         return value
+        
+    def validate(self, data):
+        if data.get('approval_status') == TrainerProfile.ApprovalStatus.REJECTED:
+            if not data.get('rejection_reason'):
+                raise serializers.ValidationError({"rejection_reason": "Rejection reason is required when rejecting a trainer."})
+        return data
 
 class AdminClientListSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source='user.email', read_only=True)

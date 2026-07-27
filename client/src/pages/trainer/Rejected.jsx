@@ -1,16 +1,36 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { authApi } from '../../services/auth/authApi';
+import { trainerApi } from '../../services/trainer/trainerApi';
+import { useTrainerStore } from '../../stores/trainerStore';
 import { Container } from '../../components/ui/LayoutComponents';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import toast from 'react-hot-toast';
-import { XCircle, ArrowLeft } from 'lucide-react';
+import { XCircle, ArrowLeft, RefreshCw } from 'lucide-react';
 
 const Rejected = () => {
   const navigate = useNavigate();
   const { clearAuth } = useAuthStore();
+  const { setProfile, profile } = useTrainerStore();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await trainerApi.getProfile();
+        if (response.success) {
+          setProfile(response.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch profile", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProfile();
+  }, [setProfile]);
 
   const handleLogout = async () => {
     try {
@@ -37,8 +57,22 @@ const Rejected = () => {
               We appreciate your interest in joining FitNexa. Unfortunately, your trainer application has not been approved at this time.
             </p>
 
+            {!loading && profile?.rejection_reason && (
+              <div className="bg-surface border border-border/10 rounded-lg p-4 text-left">
+                <h4 className="text-sm font-semibold text-gray-200 mb-2">Reason for rejection:</h4>
+                <p className="text-sm text-muted whitespace-pre-wrap">{profile.rejection_reason}</p>
+              </div>
+            )}
 
-            <div className="pt-4 border-t border-border/10">
+            <div className="pt-4 border-t border-border/10 space-y-3">
+              <Button
+                variant="primary"
+                className="w-full"
+                onClick={() => navigate('/trainer/onboarding')}
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Reapply Now
+              </Button>
               <Button
                 variant="secondary"
                 className="w-full"

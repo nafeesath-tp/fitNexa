@@ -53,11 +53,12 @@ class TrainerOnboardingAPIView(APIView):
                 )
             except Exception as e:
                 import traceback
-                traceback.print_exc()
+                with open("error_log.txt", "w") as f:
+                    traceback.print_exc(file=f)
                 return Response(
                     {
                         "success": False,
-                        "message": "Something went wrong. Please try again later.",
+                        "message": f"Error: {str(e)}",
                         "errors": {},
                     },
                     status=status.HTTP_503_SERVICE_UNAVAILABLE,

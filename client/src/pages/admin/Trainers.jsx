@@ -31,12 +31,14 @@ const Trainers = () => {
   const [actionTrainer, setActionTrainer] = useState(null); // { id, newStatus }
   const [isActionModalOpen, setIsActionModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
 
   const fetchTrainers = async () => {
     try {
       setIsLoading(true);
       const res = await adminApi.getTrainers();
-      setTrainers(res.data || res || []);
+      // Backend now returns { success: true, data: [...] }
+      setTrainers(res.data || []);
     } catch (error) {
       toast.error('Failed to fetch trainers');
     } finally {
@@ -55,19 +57,36 @@ const Trainers = () => {
 
   const handleStatusChange = (trainer, newStatus) => {
     setActionTrainer({ id: trainer.id, newStatus });
+    setRejectionReason('');
     setIsActionModalOpen(true);
   };
 
   const confirmStatusChange = async () => {
+    if (actionTrainer.newStatus === 'REJECTED' && !rejectionReason.trim()) {
+      toast.error('Please provide a rejection reason');
+      return;
+    }
+    
     try {
       setIsSubmitting(true);
-      await adminApi.updateTrainerStatus(actionTrainer.id, { approval_status: actionTrainer.newStatus });
+      const payload = { approval_status: actionTrainer.newStatus };
+      if (actionTrainer.newStatus === 'REJECTED') {
+        payload.rejection_reason = rejectionReason;
+      }
+      
+      const result = await adminApi.updateTrainerStatus(actionTrainer.id, payload);
       toast.success(`Trainer ${actionTrainer.newStatus.toLowerCase()} successfully`);
       setIsActionModalOpen(false);
       setIsViewModalOpen(false); // Close profile view if open
       fetchTrainers();
     } catch (error) {
-      toast.error('Failed to update status');
+      // Show the actual server error message so it's easy to diagnose
+      const msg =
+        error.response?.data?.message ||
+        error.response?.data?.errors?.approval_status?.[0] ||
+        error.response?.data?.detail ||
+        'Failed to update status';
+      toast.error(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -274,13 +293,28 @@ const Trainers = () => {
       <Modal
         isOpen={isActionModalOpen}
         onClose={() => setIsActionModalOpen(false)}
-        title="Confirm Status Change"
+        title={actionTrainer?.newStatus === 'REJECTED' ? 'Reject Trainer' : 'Confirm Status Change'}
         maxWidth="sm"
       >
         <div className="space-y-6">
           <p className="text-gray-300">
             Are you sure you want to mark this trainer as <strong className="text-white">{actionTrainer?.newStatus}</strong>?
           </p>
+          
+          {actionTrainer?.newStatus === 'REJECTED' && (
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-200">
+                Reason <span className="text-danger">*</span>
+              </label>
+              <textarea
+                className="w-full bg-surface border border-border/10 rounded-lg p-3 text-white focus:outline-none focus:border-primary/50 transition-colors min-h-[100px] resize-y"
+                placeholder="Please explain why the application is being rejected..."
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+              />
+            </div>
+          )}
+
           <div className="flex justify-end gap-3 pt-4 border-t border-border/10">
             <Button type="button" variant="secondary" onClick={() => setIsActionModalOpen(false)} disabled={isSubmitting}>
               Cancel
@@ -292,7 +326,7 @@ const Trainers = () => {
               onClick={confirmStatusChange}
               isLoading={isSubmitting}
             >
-              Confirm Change
+              {actionTrainer?.newStatus === 'REJECTED' ? 'Reject' : 'Confirm Change'}
             </Button>
           </div>
         </div>

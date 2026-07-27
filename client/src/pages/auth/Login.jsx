@@ -8,6 +8,7 @@ import { authApi } from '../../services/auth/authApi';
 import { useAuthStore } from '../../stores/authStore';
 import { getHomeRoute } from '../../utils/redirectUser';
 import { Dumbbell } from 'lucide-react';
+import { GoogleLogin } from '@react-oauth/google';
 
 import Input from '../../components/ui/Input';
 import PasswordInput from '../../components/ui/PasswordInput';
@@ -19,6 +20,7 @@ const Login = () => {
   const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   const { register, handleSubmit, setError, formState: { errors } } = useForm({
     resolver: zodResolver(loginSchema),
@@ -61,6 +63,39 @@ const Login = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      setIsGoogleLoading(true);
+      const response = await authApi.googleAuth({
+        id_token: credentialResponse.credential
+      });
+      
+      if (response.success) {
+        if (response.needs_signup) {
+          // If the user doesn't exist, we navigate to signup and pass the token in state
+          toast.success("Please choose a role to complete your profile");
+          navigate('/signup', { state: { googleData: response, googleToken: credentialResponse.credential } });
+        } else {
+          // User exists, they are logged in
+          toast.success(response.message || 'Login successful!');
+          setAuth(response.data);
+          const route = getHomeRoute(response.data);
+          navigate(route, { replace: true });
+        }
+      } else {
+        setError('root', { type: 'manual', message: response.message || 'Google Login failed.' });
+      }
+    } catch (error) {
+      setError('root', { type: 'manual', message: error.response?.data?.message || 'An error occurred during Google login.' });
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
+
+  const handleGoogleError = () => {
+    setError('root', { type: 'manual', message: 'Google Login failed. Please try again.' });
   };
 
   return (
@@ -114,10 +149,34 @@ const Login = () => {
               </div>
             )}
 
-            <Button type="submit" isLoading={isLoading} className="w-full mt-6">
+            <Button type="submit" isLoading={isLoading} className="w-full mt-6" disabled={isGoogleLoading}>
               Log In
             </Button>
           </form>
+
+          <div className="my-6 flex items-center justify-center">
+            <div className="flex-grow border-t border-border/10"></div>
+            <span className="px-3 text-xs text-muted uppercase">Or continue with</span>
+            <div className="flex-grow border-t border-border/10"></div>
+          </div>
+          
+          <div className="flex justify-center w-full min-h-[40px] items-center">
+            {isGoogleLoading ? (
+               <div className="text-muted text-sm flex items-center justify-center h-[40px]">
+                  Loading Google Auth...
+               </div>
+            ) : (
+               <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={handleGoogleError}
+                  shape="rectangular"
+                  theme="outline"
+                  text="signin_with"
+                  size="large"
+                  width="100%"
+               />
+            )}
+          </div>
 
           <p className="mt-6 text-center text-sm text-muted">
             Don't have an account?{' '}

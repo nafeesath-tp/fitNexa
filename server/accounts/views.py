@@ -10,7 +10,7 @@ from .serializers import (
     PublicSpecializationSerializer
 )
 from .services import signup_user, verify_otp, resend_otp, login_user, forgot_password, verify_reset_otp, reset_password
-from .models import Specialization
+from .models import Specialization, TrainerProfile
 
 class PublicSpecializationListAPIView(APIView):
     permission_classes = [AllowAny]
@@ -392,12 +392,15 @@ class MeAPIView(APIView):
             "role": user.role,
         }
 
-        # Attach role-specific fields without extra DB queries where possible
+        # Attach role-specific fields.
+        # Use explicit DB query for TRAINER so we catch missing profiles cleanly.
         if user.role == "TRAINER":
-            try:
-                data["approval_status"] = user.trainer_profile.approval_status
-            except Exception:
-                data["approval_status"] = None
+            trainer_profile = TrainerProfile.objects.filter(user=user).first()
+            if trainer_profile:
+                data["approval_status"] = trainer_profile.approval_status
+            else:
+                # Trainer exists but hasn't submitted the onboarding form yet.
+                data["approval_status"] = "PENDING_ONBOARDING"
 
         elif user.role == "CLIENT":
             try:
@@ -413,3 +416,265 @@ class MeAPIView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+from .google_auth import verify_google_token
+from .models import User
+from rest_framework_simplejwt.tokens import RefreshToken
+
+
+class TokenRefreshAPIView(APIView):
+    """
+    POST /api/auth/token/refresh/
+
+    Reads the HttpOnly 'refresh_token' cookie and issues a fresh
+    'access_token' cookie.  Called automatically by the frontend
+    axios interceptor when a 401 is received.
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        refresh_token = request.COOKIES.get("refresh_token")
+        if not refresh_token:
+            return Response(
+                {"success": False, "message": "No refresh token found. Please log in again."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        try:
+            refresh = RefreshToken(refresh_token)
+            new_access = str(refresh.access_token)
+
+            response = Response(
+                {"success": True, "message": "Access token refreshed."},
+                status=status.HTTP_200_OK,
+            )
+            response.set_cookie(
+                key="access_token",
+                value=new_access,
+                httponly=True,
+                samesite="Lax",
+                secure=False,
+                max_age=60 * 30,  # 30 minutes
+            )
+            return response
+
+        except Exception:
+            return Response(
+                {"success": False, "message": "Refresh token is invalid or expired. Please log in again."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+
+def get_tokens_for_user(user):
+    refresh = RefreshToken.for_user(user)
+    return {
+        'refresh': str(refresh),
+        'access': str(refresh.access_token),
+    }
+
+
+class GoogleAuthAPIView(APIView):
+    """
+    POST /api/auth/google-auth/
+
+    Step 1 of the Google login/signup flow.
+    - Verifies the Google ID token.
+    - If the user already exists  → logs them in and returns tokens.
+    - If the user does not exist  → returns needs_signup=True so the
+      frontend can show the role-selection step (Step 2).
+
+    Routing after a successful login uses the same data shape as
+    the email login endpoint so that getHomeRoute() works identically.
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        token = request.data.get('id_token')
+        if not token:
+            return Response(
+                {"success": False, "message": "ID token is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            idinfo = verify_google_token(token)
+            email  = idinfo['email']
+
+            user = User.objects.filter(email=email).first()
+
+            if user:
+                # ── User exists: build login response ──────────────────────
+                tokens = get_tokens_for_user(user)
+
+                response_data = {
+                    "email": user.email,
+                    "role":  user.role,
+                }
+
+                if user.role == "TRAINER":
+                    # Safe lookup — no bare except, no hasattr magic.
+                    trainer_profile = TrainerProfile.objects.filter(user=user).first()
+                    if trainer_profile:
+                        response_data["approval_status"] = trainer_profile.approval_status
+                    else:
+                        # User exists with TRAINER role but hasn't completed
+                        # onboarding yet (e.g. signed up via Google previously).
+                        response_data["approval_status"] = "PENDING_ONBOARDING"
+
+                elif user.role == "CLIENT":
+                    try:
+                        response_data["is_profile_completed"] = user.client_profile.is_profile_completed
+                    except Exception:
+                        response_data["is_profile_completed"] = False
+
+                response = Response(
+                    {
+                        "success": True,
+                        "message": "Login successful.",
+                        "data": response_data,
+                    },
+                    status=status.HTTP_200_OK,
+                )
+                response.set_cookie(
+                    key="access_token", value=tokens["access"],
+                    httponly=True, samesite="Lax", secure=False, max_age=60 * 30,
+                )
+                response.set_cookie(
+                    key="refresh_token", value=tokens["refresh"],
+                    httponly=True, samesite="Lax", secure=False, max_age=60 * 60 * 24 * 7,
+                )
+                return response
+
+            else:
+                # ── User does not exist: prompt for role selection ──────────
+                return Response(
+                    {
+                        "success":      True,
+                        "message":      "User not found. Role selection required.",
+                        "needs_signup": True,
+                        "email":        email,
+                        "first_name":   idinfo.get("given_name",  ""),
+                        "last_name":    idinfo.get("family_name", ""),
+                    },
+                    status=status.HTTP_202_ACCEPTED,
+                )
+
+        except ValueError as e:
+            return Response(
+                {"success": False, "message": str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+
+class GoogleSignupAPIView(APIView):
+    """
+    POST /api/auth/google-signup/
+
+    Step 2 of the Google signup flow (called only for NEW users).
+    - Re-verifies the Google ID token (never trust client-side data).
+    - Creates the User record with the chosen role.
+    - For CLIENT: also creates a ClientProfile so setup can proceed.
+    - For TRAINER: does NOT create a TrainerProfile here — the trainer
+      must complete the onboarding form first. The response carries
+      approval_status = 'PENDING_ONBOARDING' so getHomeRoute() sends
+      them to /trainer/onboarding.
+    - Returns HttpOnly JWT cookies and user data.
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        token = request.data.get('id_token')
+        role  = request.data.get('role')
+
+        if not token or not role:
+            return Response(
+                {"success": False, "message": "ID token and role are required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if role not in dict(User.Role.choices):
+            return Response(
+                {"success": False, "message": "Invalid role"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            idinfo     = verify_google_token(token)
+            email      = idinfo['email']
+            first_name = idinfo.get("given_name",  "")
+            last_name  = idinfo.get("family_name", "")
+
+            # Guard: race-condition check — user might have been created
+            # between Step 1 and Step 2.
+            if User.objects.filter(email=email).exists():
+                return Response(
+                    {"success": False, "message": "User already exists. Please log in."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # ── Create the User ────────────────────────────────────────────
+            user = User.objects.create(
+                email=email,
+                role=role,
+                is_verified=True,   # Google has already verified the email
+                is_active=True,
+            )
+            user.set_unusable_password()   # Google users don't need a password
+            user.save()
+
+            # ── Create role-specific profile ───────────────────────────────
+            if role == User.Role.CLIENT:
+                from client.models import ClientProfile
+                ClientProfile.objects.create(
+                    user=user,
+                    first_name=first_name,
+                    last_name=last_name,
+                    phone="",
+                )
+
+            # TRAINER: no TrainerProfile is created here.
+            # The trainer will be directed to /trainer/onboarding where
+            # they fill in bio, experience, specialization, certificate, etc.
+            # Only after submitting that form is a TrainerProfile created.
+
+            # ── Issue tokens and build response ────────────────────────────
+            tokens = get_tokens_for_user(user)
+
+            response_data = {
+                "email": user.email,
+                "role":  user.role,
+            }
+
+            if user.role == "CLIENT":
+                response_data["is_profile_completed"] = False
+
+            elif user.role == "TRAINER":
+                # PENDING_ONBOARDING signals getHomeRoute() to send the
+                # user to /trainer/onboarding (no TrainerProfile exists yet).
+                response_data["approval_status"] = "PENDING_ONBOARDING"
+
+            response = Response(
+                {
+                    "success": True,
+                    "message": "Account created successfully.",
+                    "data": response_data,
+                },
+                status=status.HTTP_201_CREATED,
+            )
+            response.set_cookie(
+                key="access_token", value=tokens["access"],
+                httponly=True, samesite="Lax", secure=False, max_age=60 * 30,
+            )
+            response.set_cookie(
+                key="refresh_token", value=tokens["refresh"],
+                httponly=True, samesite="Lax", secure=False, max_age=60 * 60 * 24 * 7,
+            )
+            return response
+
+        except ValueError as e:
+            return Response(
+                {"success": False, "message": str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+

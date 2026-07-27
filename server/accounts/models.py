@@ -141,5 +141,7 @@ class TrainerProfile(models.Model):
 
     updated_at = models.DateTimeField(auto_now=True)
 
+    rejection_reason = models.TextField(blank=True, null=True)
+
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.user.email})"

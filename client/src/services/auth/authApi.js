@@ -12,6 +12,16 @@ export const authApi = {
         return response.data;
     },
 
+    googleAuth: async (data) => {
+        const response = await api.post('/api/auth/google-auth/', data);
+        return response.data;
+    },
+
+    googleSignup: async (data) => {
+        const response = await api.post('/api/auth/google-signup/', data);
+        return response.data;
+    },
+
     logout: async () => {
         const response = await api.post('/api/auth/logout/');
         return response.data;
