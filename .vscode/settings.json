@@ -3,5 +3,6 @@
   "python.analysis.extraPaths": [
     "c:\\Users\\HP\\OneDrive\\Desktop\\fitNexa\\server\\myenv\\Lib\\site-packages"
   ],
-  "pyrefly.pythonInterpreter": "c:\\Users\\HP\\OneDrive\\Desktop\\fitNexa\\server\\myenv\\Scripts\\python.exe"
+  "pyrefly.pythonInterpreter": "c:\\Users\\HP\\OneDrive\\Desktop\\fitNexa\\server\\myenv\\Scripts\\python.exe",
+  "css.lint.unknownAtRules": "ignore"
 }
