@@ -29,6 +29,7 @@ urlpatterns = [
     path('api/client/', include('client.urls')),
     path('api/admin/', include('admin_api.urls')),
     path('api/subscriptions/', include('subscriptions.urls')),
+    path('api/content/', include('content.urls')),
 ]
 
 if settings.DEBUG:

@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'client',
     'admin_api',
     'subscriptions',
+    'content',
 ]
 
 MIDDLEWARE = [
