@@ -187,16 +187,16 @@ class TrainerClientListSerializer(serializers.ModelSerializer):
 
     def get_has_workout_plan(self, obj):
         try:
-            from workouts.models import WorkoutPlan
-            return WorkoutPlan.objects.filter(client=obj.client, is_active=True).exists()
-        except Exception:
+            from workout_plans.models import WorkoutAssignment
+            return WorkoutAssignment.objects.filter(trainer_assignment__client=obj.client, is_active=True).exists()
+        except Exception as e:
             return False
 
     def get_has_diet_plan(self, obj):
         try:
-            from diets.models import DietPlan
-            return DietPlan.objects.filter(client=obj.client, is_active=True).exists()
-        except Exception:
+            from diet_plans.models import DietAssignment
+            return DietAssignment.objects.filter(trainer_assignment__client=obj.client, is_active=True).exists()
+        except Exception as e:
             return False
 
 
@@ -289,11 +289,21 @@ class TrainerClientDetailSerializer(serializers.ModelSerializer):
 
     def get_activity_level(self, obj):
         p = self._get_profile(obj)
-        return p.get_activity_level_display() if p and p.activity_level else "Moderate"
+        if not p: return "Moderate"
+        if hasattr(p, 'activity_level') and p.activity_level: return p.get_activity_level_display()
+        if hasattr(p, 'experience_level') and p.experience_level: return p.get_experience_level_display()
+        return "Moderate"
 
     def get_age(self, obj):
         p = self._get_profile(obj)
-        return p.age if p else None
+        if not p: return None
+        if hasattr(p, 'age') and p.age: return p.age
+        if hasattr(p, 'date_of_birth') and p.date_of_birth:
+            from datetime import date
+            today = date.today()
+            dob = p.date_of_birth
+            return today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+        return 28
 
     def get_gender(self, obj):
         p = self._get_profile(obj)
@@ -301,21 +311,22 @@ class TrainerClientDetailSerializer(serializers.ModelSerializer):
 
     def get_medical_conditions(self, obj):
         p = self._get_profile(obj)
-        return p.medical_conditions if p else ""
+        if not p: return ""
+        return getattr(p, 'medical_condition', getattr(p, 'medical_conditions', ''))
 
     def get_subscription_plan(self, obj):
         return get_client_plan_name(obj.client)
 
     def get_has_workout_plan(self, obj):
         try:
-            from workouts.models import WorkoutPlan
-            return WorkoutPlan.objects.filter(client=obj.client, is_active=True).exists()
-        except Exception:
+            from workout_plans.models import WorkoutAssignment
+            return WorkoutAssignment.objects.filter(trainer_assignment__client=obj.client, is_active=True).exists()
+        except Exception as e:
             return False
 
     def get_has_diet_plan(self, obj):
         try:
-            from diets.models import DietPlan
-            return DietPlan.objects.filter(client=obj.client, is_active=True).exists()
-        except Exception:
+            from diet_plans.models import DietAssignment
+            return DietAssignment.objects.filter(trainer_assignment__client=obj.client, is_active=True).exists()
+        except Exception as e:
             return False
