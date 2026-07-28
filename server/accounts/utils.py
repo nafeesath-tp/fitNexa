@@ -12,10 +12,6 @@ def generate_otp():
 
 
 def send_otp_email(email, otp):
-    print("\n" + "="*60)
-    print(f"📧 [FitNexa Verification] OTP for {email} -> {otp}")
-    print("="*60 + "\n")
-
     subject = "FitNexa Email Verification"
 
     message = f"""
@@ -31,15 +27,10 @@ Regards,
 FitNexa Team
 """
 
-    try:
-        send_mail(
-            subject=subject,
-            message=message,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[email],
-            fail_silently=False,
-        )
-        print(f"✅ Email successfully dispatched to {email} via SMTP. (Note: Check Spam/Junk folder if not in Inbox)")
-    except Exception as e:
-        print(f"⚠️ Warning: Could not send SMTP email to {email}: {e}")
-        print(f"💡 [DEV MODE] Please use the OTP code printed in the console above: {otp}")
+    send_mail(
+        subject=subject,
+        message=message,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[email],
+        fail_silently=False,
+    )

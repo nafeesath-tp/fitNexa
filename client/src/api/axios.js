@@ -46,7 +46,9 @@ api.interceptors.response.use(
         if (
             error.response?.status === 401 &&
             !originalRequest._retry &&
-            !originalRequest.url.includes('/api/auth/token/refresh/')
+            !originalRequest.url.includes('/api/auth/token/refresh/') &&
+            !originalRequest.url.includes('/api/auth/me/') &&
+            !originalRequest.url.includes('/api/auth/login/')
         ) {
             if (isRefreshing) {
                 // Another refresh is already in-flight — queue this request
@@ -68,11 +70,16 @@ api.interceptors.response.use(
                 // Refresh token also expired — user must log in again
                 processQueue(refreshError);
 
-                // Clear Zustand auth state and redirect to login
+                // Clear Zustand auth state
                 // (Import lazily to avoid circular dependency)
                 const { useAuthStore } = await import('../stores/authStore');
                 useAuthStore.getState().clearAuth();
-                window.location.href = '/login';
+
+                // Only redirect to /login if we are NOT already on a public/auth route
+                const publicPaths = ['/login', '/admin-login', '/signup', '/verify-otp', '/forgot-password', '/'];
+                if (!publicPaths.includes(window.location.pathname)) {
+                    window.location.href = '/login';
+                }
 
                 return Promise.reject(refreshError);
             } finally {
