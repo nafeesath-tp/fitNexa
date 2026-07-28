@@ -12,10 +12,10 @@ def get_client_active_plan(user):
     Returns 'FREE', 'GROUP', or 'PREMIUM'.
     """
     try:
-        from subscriptions.models import ClientSubscription, PaymentStatus
+        from subscriptions.models import ClientSubscription
         sub = ClientSubscription.objects.filter(
             client=user, 
-            payment_status=PaymentStatus.ACTIVE
+            payment_status=ClientSubscription.PaymentStatus.ACTIVE
         ).order_by("-created_at").first()
         
         if sub and (not sub.expires_at or sub.expires_at > timezone.now()):

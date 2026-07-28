@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import { 
   LayoutDashboard, Users, UserCog, Briefcase, 
   CheckCircle, DollarSign, Megaphone, FileText, 
-  Dumbbell, LogOut, Search, Activity, CreditCard, Video
+  Dumbbell, LogOut, Search, Activity, CreditCard, Video, UserCheck
 } from 'lucide-react';
 
 import { cn } from '../utils/cn';
@@ -34,6 +34,7 @@ const AdminLayout = () => {
     { label: 'Specialisation',path: '/admin/specializations', icon: Briefcase       },
     { label: 'Subscriptions', path: '/admin/subscriptions',   icon: CreditCard      },
     { label: 'Content Library', path: '/admin/content',       icon: Video           },
+    { label: 'Assignments',   path: '/admin/client-assignments', icon: UserCheck    },
   ];
 
   return (

@@ -33,8 +33,10 @@ import AdminSpecializations from './pages/admin/Specializations';
 import AdminSubscriptions from './pages/admin/Subscriptions';
 import AdminContent from './pages/admin/Content';
 import ClientPlans from './pages/client/Plans';
-import ClientSubscription from './pages/client/SubscriptionHistory';
 import ClientVideos from './pages/client/Videos';
+import AdminClientAssignments from './pages/admin/ClientAssignments';
+import TrainerMyClients from './pages/trainer/MyClients';
+import TrainerClientDetail from './pages/trainer/ClientDetail';
 
 // --- Placeholder Pages (To be built later) ---
 const Placeholder = ({ title }) => <div><h2>{title} Page</h2></div>;
@@ -103,6 +105,8 @@ function App() {
             <Route path="rejected" element={<TrainerRejected />} />
             <Route path="home" element={<TrainerHome />} />
             <Route path="profile" element={<TrainerEditProfile />} />
+            <Route path="clients" element={<TrainerMyClients />} />
+            <Route path="clients/:id" element={<TrainerClientDetail />} />
           </Route>
         </Route>
 
@@ -115,6 +119,7 @@ function App() {
             <Route path="specializations" element={<AdminSpecializations />} />
             <Route path="subscriptions" element={<AdminSubscriptions />} />
             <Route path="content" element={<AdminContent />} />
+            <Route path="client-assignments" element={<AdminClientAssignments />} />
           </Route>
         </Route>
 
