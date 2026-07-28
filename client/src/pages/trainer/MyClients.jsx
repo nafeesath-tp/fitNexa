@@ -157,6 +157,7 @@ const MyClients = () => {
                       <span className="text-xs font-semibold text-white block mt-0.5">
                         {client.bmi ? `${client.bmi} kg/m²` : "Not logged"}
                       </span>
+                    </div>
                   </div>
 
                   {/* Plan Status Row */}
@@ -197,7 +198,7 @@ const MyClients = () => {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      toast("Workout Plans (Module 8) integration active next!", { icon: "🏋️" });
+                      navigate("/trainer/workout-plans");
                     }}
                     title="Assign Workout Plan"
                     className="p-2 rounded-lg bg-[#0f241a] border border-[#23533d] hover:border-emerald-500/50 text-emerald-400 transition-colors"

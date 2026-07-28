@@ -253,7 +253,7 @@ const ClientDetail = () => {
                 <Button
                   size="sm"
                   variant="primary"
-                  onClick={() => setActiveTab("workouts")}
+                  onClick={() => navigate("/trainer/workout-plans")}
                   className="w-full justify-center text-xs"
                 >
                   Create Workout Plan →
@@ -272,7 +272,7 @@ const ClientDetail = () => {
         </div>
       )}
 
-      {/* Workouts Tab (Module 8 Bridge) */}
+      {/* Workouts Tab (Module 8) */}
       {activeTab === "workouts" && (
         <div className="bg-[#163829] border border-[#23533d] rounded-2xl p-12 text-center space-y-4">
           <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto text-emerald-400 border border-emerald-500/20">
@@ -280,10 +280,12 @@ const ClientDetail = () => {
           </div>
           <h3 className="text-xl font-bold text-white">Workout Plan Management (Module 8)</h3>
           <p className="text-sm text-gray-400 max-w-lg mx-auto">
-            This module will allow you to assign daily exercises, sets, reps, and video tutorials directly to <strong>{name}</strong>.
+            You can create, customize, and assign multi-week workout programs with exercises, sets, reps, and video tutorials directly to <strong>{name}</strong>.
           </p>
-          <div className="pt-2">
-            <Badge variant="success">Module 7 Bridge Active</Badge>
+          <div className="pt-2 flex justify-center">
+            <Button variant="primary" onClick={() => navigate("/trainer/workout-plans")} className="flex items-center gap-2">
+              <Dumbbell className="w-4 h-4" /> Go to Workout Plan Builder →
+            </Button>
           </div>
         </div>
       )}

@@ -4,6 +4,8 @@ import { useAuthStore } from '../../stores/authStore';
 import { useSubscriptionStore } from '../../stores/subscriptionStore';
 import { clientManagementApi } from '../../services/clientManagementApi';
 import { subscriptionApi } from '../../services/subscriptionApi';
+import { workoutApi } from '../../services/workoutApi';
+import { useWorkoutStore } from '../../stores/workoutStore';
 import toast from 'react-hot-toast';
 import {
   Dumbbell, Utensils, Video, CreditCard, User,
@@ -53,6 +55,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { currentSubscription, setCurrentSubscription } = useSubscriptionStore();
+  const { currentWorkout, setCurrentWorkout } = useWorkoutStore();
 
   const [assignedTrainer, setAssignedTrainer] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -61,9 +64,10 @@ export default function Dashboard() {
     const init = async () => {
       try {
         setIsLoading(true);
-        const [trainerRes, subRes] = await Promise.allSettled([
+        const [trainerRes, subRes, workoutRes] = await Promise.allSettled([
           clientManagementApi.getMyAssignedTrainer(),
           !currentSubscription ? subscriptionApi.getCurrent() : Promise.resolve({ success: false }),
+          workoutApi.getClientCurrentWorkout(),
         ]);
 
         if (trainerRes.status === 'fulfilled' && trainerRes.value?.success) {
@@ -71,6 +75,9 @@ export default function Dashboard() {
         }
         if (subRes.status === 'fulfilled' && subRes.value?.success) {
           setCurrentSubscription(subRes.value.data);
+        }
+        if (workoutRes.status === 'fulfilled' && workoutRes.value?.success) {
+          setCurrentWorkout(workoutRes.value.data);
         }
       } catch (err) {
         toast.error('Failed to load dashboard.');
@@ -139,10 +146,10 @@ export default function Dashboard() {
           <StatCard
             icon={Dumbbell}
             label="Workout Plan"
-            value="Not Assigned"
-            sub="Module 8 coming next"
+            value={currentWorkout ? currentWorkout.plan.title : "Not Assigned"}
+            sub={currentWorkout ? `${currentWorkout.plan.duration_weeks} weeks (${currentWorkout.completed_days}/${currentWorkout.total_days} days)` : "Waiting for trainer"}
             colorClass="text-orange-400"
-            onClick={() => navigate('/client/videos')}
+            onClick={() => navigate(currentWorkout ? '/client/workout' : '/client/videos')}
           />
 
           {/* Diet Plan */}
@@ -158,8 +165,8 @@ export default function Dashboard() {
           <StatCard
             icon={TrendingUp}
             label="Overall Progress"
-            value="0%"
-            sub="Complete workouts to track"
+            value={currentWorkout ? `${currentWorkout.progress_pct}%` : "0%"}
+            sub={currentWorkout ? `${currentWorkout.completed_days} of ${currentWorkout.total_days} workouts done` : "Complete workouts to track"}
             colorClass="text-purple-400"
           />
         </div>
@@ -222,17 +229,28 @@ export default function Dashboard() {
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {/* Workout CTA */}
-                <div className="bg-[#0f241a] border border-[#1e4633] rounded-xl p-4 flex items-center justify-between">
+                <div 
+                  onClick={() => navigate(currentWorkout ? '/client/workout' : '/client/videos')}
+                  className="bg-[#0f241a] border border-[#1e4633] rounded-xl p-4 flex items-center justify-between cursor-pointer hover:border-emerald-500/40 transition-all"
+                >
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <Dumbbell className="w-4 h-4 text-orange-400" />
-                      <span className="text-sm font-semibold text-white">Workout</span>
+                      <span className="text-sm font-semibold text-white">Workout Plan</span>
                     </div>
-                    <p className="text-xs text-gray-400">No plan assigned yet</p>
+                    <p className="text-xs text-gray-400 truncate max-w-[160px]">
+                      {currentWorkout ? currentWorkout.plan.title : "No plan assigned yet"}
+                    </p>
                   </div>
-                  <span className="text-xs bg-gray-700/50 text-gray-400 border border-gray-600 px-2 py-1 rounded-lg">
-                    Soon
-                  </span>
+                  {currentWorkout ? (
+                    <span className="text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-1 rounded-lg font-bold shrink-0">
+                      {currentWorkout.progress_pct}%
+                    </span>
+                  ) : (
+                    <span className="text-xs bg-gray-700/50 text-gray-400 border border-gray-600 px-2 py-1 rounded-lg shrink-0">
+                      Waiting
+                    </span>
+                  )}
                 </div>
 
                 {/* Diet CTA */}

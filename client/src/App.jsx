@@ -38,6 +38,9 @@ import ClientDashboard from './pages/client/Dashboard';
 import AdminClientAssignments from './pages/admin/ClientAssignments';
 import TrainerMyClients from './pages/trainer/MyClients';
 import TrainerClientDetail from './pages/trainer/ClientDetail';
+import TrainerWorkoutPlans from './pages/trainer/WorkoutPlans';
+import TrainerWorkoutPlanDetail from './pages/trainer/WorkoutPlanDetail';
+import ClientMyWorkout from './pages/client/MyWorkout';
 
 // --- Placeholder Pages (To be built later) ---
 const Placeholder = ({ title }) => <div><h2>{title} Page</h2></div>;
@@ -92,6 +95,7 @@ function App() {
             <Route path="setup"        element={<ProfileSetup />} />
             <Route path="home"         element={<Home />} />
             <Route path="dashboard"    element={<ClientDashboard />} />
+            <Route path="workout"      element={<ClientMyWorkout />} />
             <Route path="profile"      element={<EditProfile />} />
             <Route path="plans"        element={<ClientPlans />} />
             <Route path="videos"       element={<ClientVideos />} />
@@ -108,6 +112,8 @@ function App() {
             <Route path="profile" element={<TrainerEditProfile />} />
             <Route path="clients" element={<TrainerMyClients />} />
             <Route path="clients/:id" element={<TrainerClientDetail />} />
+            <Route path="workout-plans" element={<TrainerWorkoutPlans />} />
+            <Route path="workout-plans/:planId" element={<TrainerWorkoutPlanDetail />} />
           </Route>
         </Route>
 

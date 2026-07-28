@@ -25,7 +25,7 @@ const ClientLayout = () => {
 
   const navLinks = [
     { label: 'Dashboard',   path: '/client/dashboard'  },
-    { label: 'Home',        path: '/client/home'       },
+    { label: 'My Workout',  path: '/client/workout'    },
     { label: 'Videos',      path: '/client/videos'     },
     { label: 'Plans',       path: '/client/plans'      },
     { label: 'My Profile',  path: '/client/profile'    },
