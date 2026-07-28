@@ -157,6 +157,25 @@ const MyClients = () => {
                       <span className="text-xs font-semibold text-white block mt-0.5">
                         {client.bmi ? `${client.bmi} kg/m²` : "Not logged"}
                       </span>
+                  </div>
+
+                  {/* Plan Status Row */}
+                  <div className="space-y-1.5 mb-4">
+                    <div className="flex items-center justify-between text-xs py-1.5 px-3 bg-[#0f241a] rounded-lg border border-[#1e4633]">
+                      <span className="flex items-center gap-1.5 text-gray-300 font-medium">
+                        <Dumbbell className="w-3.5 h-3.5 text-emerald-400" /> Workout Plan
+                      </span>
+                      <span className={client.has_workout_plan ? "text-emerald-400 font-semibold" : "text-gray-500 font-medium"}>
+                        {client.has_workout_plan ? "Assigned ✅" : "Not Assigned ❌"}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs py-1.5 px-3 bg-[#0f241a] rounded-lg border border-[#1e4633]">
+                      <span className="flex items-center gap-1.5 text-gray-300 font-medium">
+                        <Utensils className="w-3.5 h-3.5 text-emerald-400" /> Diet Plan
+                      </span>
+                      <span className={client.has_diet_plan ? "text-emerald-400 font-semibold" : "text-gray-500 font-medium"}>
+                        {client.has_diet_plan ? "Assigned ✅" : "Not Assigned ❌"}
+                      </span>
                     </div>
                   </div>
                 </div>

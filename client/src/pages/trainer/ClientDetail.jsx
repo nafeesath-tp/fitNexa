@@ -90,6 +90,22 @@ const ClientDetail = () => {
               <ShieldCheck className="w-3.5 h-3.5" /> Assigned to you on{" "}
               {client.assigned_at ? new Date(client.assigned_at).toLocaleDateString() : "Recently"}
             </div>
+            <div className="flex items-center gap-3 mt-2.5 text-xs">
+              <span className={`px-2.5 py-0.5 rounded-md border flex items-center gap-1 ${
+                client.has_workout_plan 
+                  ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" 
+                  : "bg-gray-800/50 text-gray-400 border-gray-700"
+              }`}>
+                <Dumbbell className="w-3 h-3" /> Workout: {client.has_workout_plan ? "Assigned ✅" : "Not Assigned ❌"}
+              </span>
+              <span className={`px-2.5 py-0.5 rounded-md border flex items-center gap-1 ${
+                client.has_diet_plan 
+                  ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" 
+                  : "bg-gray-800/50 text-gray-400 border-gray-700"
+              }`}>
+                <Utensils className="w-3 h-3" /> Diet: {client.has_diet_plan ? "Assigned ✅" : "Not Assigned ❌"}
+              </span>
+            </div>
           </div>
         </div>
 

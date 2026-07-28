@@ -287,9 +287,10 @@ const ClientAssignments = () => {
                 {approvedTrainers.map((t) => {
                   const tName = `${t.name || t.first_name || ""} ${t.last_name || ""}`.trim() || t.email;
                   const spec = t.specialization || t.specialization_name || "General";
+                  const workload = clients.filter(c => c.is_assigned && c.assigned_trainer && c.assigned_trainer.id === t.id).length;
                   return (
                     <option key={t.id} value={t.id}>
-                      {tName} ({spec}) - {t.experience || 0} yrs exp
+                      {tName} ({workload} {workload === 1 ? "client" : "clients"}) — {spec}
                     </option>
                   );
                 })}

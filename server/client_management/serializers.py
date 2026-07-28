@@ -133,6 +133,8 @@ class TrainerClientListSerializer(serializers.ModelSerializer):
     goal = serializers.SerializerMethodField()
     bmi = serializers.SerializerMethodField()
     subscription_plan = serializers.SerializerMethodField()
+    has_workout_plan = serializers.SerializerMethodField()
+    has_diet_plan = serializers.SerializerMethodField()
 
     class Meta:
         model = TrainerAssignment
@@ -147,6 +149,8 @@ class TrainerClientListSerializer(serializers.ModelSerializer):
             "goal",
             "bmi",
             "subscription_plan",
+            "has_workout_plan",
+            "has_diet_plan",
             "assigned_at",
         ]
 
@@ -181,6 +185,20 @@ class TrainerClientListSerializer(serializers.ModelSerializer):
     def get_subscription_plan(self, obj):
         return get_client_plan_name(obj.client)
 
+    def get_has_workout_plan(self, obj):
+        try:
+            from workouts.models import WorkoutPlan
+            return WorkoutPlan.objects.filter(client=obj.client, is_active=True).exists()
+        except Exception:
+            return False
+
+    def get_has_diet_plan(self, obj):
+        try:
+            from diets.models import DietPlan
+            return DietPlan.objects.filter(client=obj.client, is_active=True).exists()
+        except Exception:
+            return False
+
 
 class TrainerClientDetailSerializer(serializers.ModelSerializer):
     """
@@ -204,6 +222,8 @@ class TrainerClientDetailSerializer(serializers.ModelSerializer):
     gender = serializers.SerializerMethodField()
     medical_conditions = serializers.SerializerMethodField()
     subscription_plan = serializers.SerializerMethodField()
+    has_workout_plan = serializers.SerializerMethodField()
+    has_diet_plan = serializers.SerializerMethodField()
 
     class Meta:
         model = TrainerAssignment
@@ -224,6 +244,8 @@ class TrainerClientDetailSerializer(serializers.ModelSerializer):
             "gender",
             "medical_conditions",
             "subscription_plan",
+            "has_workout_plan",
+            "has_diet_plan",
             "assigned_at",
             "notes",
         ]
@@ -283,3 +305,17 @@ class TrainerClientDetailSerializer(serializers.ModelSerializer):
 
     def get_subscription_plan(self, obj):
         return get_client_plan_name(obj.client)
+
+    def get_has_workout_plan(self, obj):
+        try:
+            from workouts.models import WorkoutPlan
+            return WorkoutPlan.objects.filter(client=obj.client, is_active=True).exists()
+        except Exception:
+            return False
+
+    def get_has_diet_plan(self, obj):
+        try:
+            from diets.models import DietPlan
+            return DietPlan.objects.filter(client=obj.client, is_active=True).exists()
+        except Exception:
+            return False
