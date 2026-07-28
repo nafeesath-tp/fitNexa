@@ -47,19 +47,10 @@ export const trainerProfileSchema = z.object({
     ),
 
   certificate: z.any()
+    .optional()
     .refine(
       (files) => {
-        if (!files || files.length === 0) {
-          return false; // Required
-        }
-        if (typeof files === 'string') return true; // Already uploaded URL
-        return true;
-      },
-      "Professional certificate is required"
-    )
-    .refine(
-      (files) => {
-        if (!files || files.length === 0) return true; // Skip size check if no file
+        if (!files || files.length === 0) return true; // Always pass during field validation
         if (typeof files === 'string') return true; // Already uploaded URL
         return files[0]?.size <= MAX_FILE_SIZE;
       },
@@ -67,10 +58,19 @@ export const trainerProfileSchema = z.object({
     )
     .refine(
       (files) => {
-        if (!files || files.length === 0) return true; // Skip type check if no file
+        if (!files || files.length === 0) return true; // Always pass during field validation
         if (typeof files === 'string') return true; // Already uploaded URL
         return ACCEPTED_PDF_TYPES.includes(files[0]?.type);
       },
       "Only .pdf format is supported for certificates."
-    ),
+    )
+    .superRefine((files, ctx) => {
+      // This runs during form submission - check if certificate is required and missing
+      if (!files || (typeof files !== 'string' && files.length === 0)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Professional certificate is required",
+        });
+      }
+    }),
 });
