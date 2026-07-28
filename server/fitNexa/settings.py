@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'subscriptions',
     'content',
     'client_management',
+    'workout_plans',
 ]
 
 MIDDLEWARE = [

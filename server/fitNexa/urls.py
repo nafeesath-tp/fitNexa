@@ -31,6 +31,7 @@ urlpatterns = [
     path('api/subscriptions/', include('subscriptions.urls')),
     path('api/content/', include('content.urls')),
     path('api/client-management/', include('client_management.urls')),
+    path('api/workouts/', include('workout_plans.urls')),
 ]
 
 if settings.DEBUG:
