@@ -261,7 +261,7 @@ const ClientDetail = () => {
                 <Button
                   size="sm"
                   variant="secondary"
-                  onClick={() => setActiveTab("diets")}
+                  onClick={() => navigate("/trainer/diet-plans")}
                   className="w-full justify-center text-xs border-emerald-500/30"
                 >
                   Create Diet Plan →
@@ -290,7 +290,7 @@ const ClientDetail = () => {
         </div>
       )}
 
-      {/* Diets Tab (Module 9 Bridge) */}
+      {/* Diets Tab (Module 9) */}
       {activeTab === "diets" && (
         <div className="bg-[#163829] border border-[#23533d] rounded-2xl p-12 text-center space-y-4">
           <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto text-emerald-400 border border-emerald-500/20">
@@ -298,10 +298,12 @@ const ClientDetail = () => {
           </div>
           <h3 className="text-xl font-bold text-white">Diet & Nutrition Planning (Module 9)</h3>
           <p className="text-sm text-gray-400 max-w-lg mx-auto">
-            This module will allow you to construct calorie targets, macronutrient splits (protein, carbs, fats), and meal schedules for <strong>{name}</strong>.
+            You can create, customize, and assign multi-week calorie and macronutrient targeted diet programs with meal schedules directly to <strong>{name}</strong>.
           </p>
-          <div className="pt-2">
-            <Badge variant="success">Module 7 Bridge Active</Badge>
+          <div className="pt-2 flex justify-center">
+            <Button variant="primary" onClick={() => navigate("/trainer/diet-plans")} className="flex items-center gap-2">
+              <Utensils className="w-4 h-4" /> Go to Diet Plan Builder →
+            </Button>
           </div>
         </div>
       )}

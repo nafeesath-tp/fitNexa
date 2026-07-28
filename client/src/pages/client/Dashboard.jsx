@@ -6,6 +6,8 @@ import { clientManagementApi } from '../../services/clientManagementApi';
 import { subscriptionApi } from '../../services/subscriptionApi';
 import { workoutApi } from '../../services/workoutApi';
 import { useWorkoutStore } from '../../stores/workoutStore';
+import { dietApi } from '../../services/dietApi';
+import { useDietStore } from '../../stores/dietStore';
 import toast from 'react-hot-toast';
 import {
   Dumbbell, Utensils, Video, CreditCard, User,
@@ -56,6 +58,7 @@ export default function Dashboard() {
   const { user } = useAuthStore();
   const { currentSubscription, setCurrentSubscription } = useSubscriptionStore();
   const { currentWorkout, setCurrentWorkout } = useWorkoutStore();
+  const { currentDiet, setCurrentDiet } = useDietStore();
 
   const [assignedTrainer, setAssignedTrainer] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -64,10 +67,11 @@ export default function Dashboard() {
     const init = async () => {
       try {
         setIsLoading(true);
-        const [trainerRes, subRes, workoutRes] = await Promise.allSettled([
+        const [trainerRes, subRes, workoutRes, dietRes] = await Promise.allSettled([
           clientManagementApi.getMyAssignedTrainer(),
           !currentSubscription ? subscriptionApi.getCurrent() : Promise.resolve({ success: false }),
           workoutApi.getClientCurrentWorkout(),
+          dietApi.getClientCurrentDiet(),
         ]);
 
         if (trainerRes.status === 'fulfilled' && trainerRes.value?.success) {
@@ -78,6 +82,9 @@ export default function Dashboard() {
         }
         if (workoutRes.status === 'fulfilled' && workoutRes.value?.success) {
           setCurrentWorkout(workoutRes.value.data);
+        }
+        if (dietRes.status === 'fulfilled' && dietRes.value?.success) {
+          setCurrentDiet(dietRes.value.data);
         }
       } catch (err) {
         toast.error('Failed to load dashboard.');
@@ -156,17 +163,18 @@ export default function Dashboard() {
           <StatCard
             icon={Utensils}
             label="Diet Plan"
-            value="Not Assigned"
-            sub="Module 9 coming next"
+            value={currentDiet ? currentDiet.plan.title : "Not Assigned"}
+            sub={currentDiet ? `${currentDiet.plan.calories} kcal/day (${currentDiet.progress_text} meals)` : "Waiting for trainer"}
             colorClass="text-green-400"
+            onClick={() => navigate(currentDiet ? '/client/diet' : '/client/dashboard')}
           />
 
           {/* Progress */}
           <StatCard
             icon={TrendingUp}
             label="Overall Progress"
-            value={currentWorkout ? `${currentWorkout.progress_pct}%` : "0%"}
-            sub={currentWorkout ? `${currentWorkout.completed_days} of ${currentWorkout.total_days} workouts done` : "Complete workouts to track"}
+            value={currentWorkout ? `${currentWorkout.progress_pct}%` : currentDiet ? `${currentDiet.progress_pct}%` : "0%"}
+            sub={currentWorkout ? `${currentWorkout.completed_days} of ${currentWorkout.total_days} workouts done` : currentDiet ? `${currentDiet.progress_text} meals logged` : "Complete workouts/meals to track"}
             colorClass="text-purple-400"
           />
         </div>
@@ -254,17 +262,28 @@ export default function Dashboard() {
                 </div>
 
                 {/* Diet CTA */}
-                <div className="bg-[#0f241a] border border-[#1e4633] rounded-xl p-4 flex items-center justify-between">
+                <div
+                  onClick={() => navigate(currentDiet ? '/client/diet' : '/client/dashboard')}
+                  className={`bg-[#0f241a] border border-[#1e4633] rounded-xl p-4 flex items-center justify-between ${currentDiet ? 'cursor-pointer hover:border-green-500/50 transition-colors' : ''}`}
+                >
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <Utensils className="w-4 h-4 text-green-400" />
                       <span className="text-sm font-semibold text-white">Diet Plan</span>
                     </div>
-                    <p className="text-xs text-gray-400">No plan assigned yet</p>
+                    <p className="text-xs text-gray-400 truncate max-w-[160px]">
+                      {currentDiet ? currentDiet.plan.title : "No plan assigned yet"}
+                    </p>
                   </div>
-                  <span className="text-xs bg-gray-700/50 text-gray-400 border border-gray-600 px-2 py-1 rounded-lg">
-                    Soon
-                  </span>
+                  {currentDiet ? (
+                    <span className="text-xs bg-green-500/20 text-green-300 border border-green-500/30 px-2.5 py-1 rounded-lg font-bold shrink-0">
+                      {currentDiet.progress_text}
+                    </span>
+                  ) : (
+                    <span className="text-xs bg-gray-700/50 text-gray-400 border border-gray-600 px-2 py-1 rounded-lg shrink-0">
+                      Waiting
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -275,9 +294,9 @@ export default function Dashboard() {
                 <Zap className="w-5 h-5 text-emerald-400" /> Quick Access
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <QuickLink icon={Utensils}    label="My Diet Plan"     desc="Track daily meals & macros"     to="/client/diet"         color="text-green-400" />
                 <QuickLink icon={Video}       label="Training Videos"  desc="Browse your content library"    to="/client/videos"       color="text-blue-400" />
                 <QuickLink icon={CreditCard}  label="Subscription"     desc={`${planName} plan — manage billing`} to="/client/plans"   color="text-yellow-400" />
-                <QuickLink icon={Activity}    label="Progress"         desc="Track your fitness journey"     to="/client/home"         color="text-purple-400" />
                 <QuickLink icon={User}        label="My Profile"       desc="Update personal details"        to="/client/profile"      color="text-pink-400" />
               </div>
             </div>

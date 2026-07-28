@@ -5,7 +5,7 @@ import { useTrainerStore } from '../stores/trainerStore';
 import { authApi } from '../services/auth/authApi';
 import Navbar from '../components/layout/Navbar';
 import toast from 'react-hot-toast';
-import { LayoutDashboard, Users, CalendarDays, MessageSquare, Wallet, Clock, LogOut, Bell, Menu, X, Activity, Dumbbell } from 'lucide-react';
+import { LayoutDashboard, Users, CalendarDays, MessageSquare, Wallet, Clock, LogOut, Bell, Menu, X, Activity, Dumbbell, Utensils } from 'lucide-react';
 import { cn } from '../utils/cn';
 
 const TrainerLayout = () => {
@@ -33,6 +33,7 @@ const TrainerLayout = () => {
     { label: 'Dashboard', path: '/trainer/home', icon: LayoutDashboard },
     { label: 'Clients', path: '/trainer/clients', icon: Users },
     { label: 'Workout Plans', path: '/trainer/workout-plans', icon: Dumbbell },
+    { label: 'Diet Plans', path: '/trainer/diet-plans', icon: Utensils },
     { label: 'Sessions', path: '/trainer/sessions', icon: CalendarDays },
     { label: 'Messages', path: '/trainer/messages', icon: MessageSquare },
     { label: 'Earnings', path: '/trainer/earnings', icon: Wallet },
