@@ -34,6 +34,7 @@ import AdminSubscriptions from './pages/admin/Subscriptions';
 import AdminContent from './pages/admin/Content';
 import ClientPlans from './pages/client/Plans';
 import ClientVideos from './pages/client/Videos';
+import ClientDashboard from './pages/client/Dashboard';
 import AdminClientAssignments from './pages/admin/ClientAssignments';
 import TrainerMyClients from './pages/trainer/MyClients';
 import TrainerClientDetail from './pages/trainer/ClientDetail';
@@ -88,12 +89,12 @@ function App() {
         {/* CLIENT ROUTES (Protected) */}
         <Route element={<ProtectedRoute allowedRoles={['CLIENT']} />}>
           <Route path="/client" element={<ClientLayout />}>
-            <Route path="setup" element={<ProfileSetup />} />
-            <Route path="home" element={<Home />} />
-            <Route path="profile" element={<EditProfile />} />
-            <Route path="plans" element={<ClientPlans />} />
-            <Route path="subscription" element={<ClientSubscription />} />
-            <Route path="videos" element={<ClientVideos />} />
+            <Route path="setup"        element={<ProfileSetup />} />
+            <Route path="home"         element={<Home />} />
+            <Route path="dashboard"    element={<ClientDashboard />} />
+            <Route path="profile"      element={<EditProfile />} />
+            <Route path="plans"        element={<ClientPlans />} />
+            <Route path="videos"       element={<ClientVideos />} />
           </Route>
         </Route>
 

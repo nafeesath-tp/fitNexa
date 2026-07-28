@@ -5,6 +5,7 @@ from .views import (
     AdminReassignTrainerAPIView,
     TrainerAssignedClientListAPIView,
     TrainerAssignedClientDetailAPIView,
+    ClientAssignedTrainerAPIView,
 )
 
 urlpatterns = [
@@ -16,4 +17,7 @@ urlpatterns = [
     # ── Trainer Endpoints ────────────────────────────────────────────────────
     path("trainer/my-clients/", TrainerAssignedClientListAPIView.as_view(), name="trainer-my-clients"),
     path("trainer/my-clients/<int:client_id>/", TrainerAssignedClientDetailAPIView.as_view(), name="trainer-client-detail"),
+
+    # ── Client Endpoints ─────────────────────────────────────────────────────
+    path("client/trainer/", ClientAssignedTrainerAPIView.as_view(), name="client-assigned-trainer"),
 ]

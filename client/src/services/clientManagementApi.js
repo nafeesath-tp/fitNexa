@@ -27,4 +27,10 @@ export const clientManagementApi = {
     const res = await api.get(`/api/client-management/trainer/my-clients/${clientId}/`);
     return res.data;
   },
+
+  // ── Client Endpoints ──────────────────────────────────────────────────────
+  getMyAssignedTrainer: async () => {
+    const res = await api.get("/api/client-management/client/trainer/");
+    return res.data;
+  },
 };

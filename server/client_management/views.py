@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from .permissions import IsAdmin, IsTrainer
+from accounts.permissions import IsAdmin, IsTrainer, IsClient
 from .serializers import AssignTrainerSerializer
 from .services import (
     get_admin_client_assignments,
@@ -10,6 +10,7 @@ from .services import (
     reassign_trainer,
     get_trainer_assigned_clients,
     get_trainer_client_detail,
+    get_client_assigned_trainer,
 )
 
 
@@ -98,4 +99,19 @@ class TrainerAssignedClientDetailAPIView(APIView):
 
     def get(self, request, client_id):
         data = get_trainer_client_detail(request.user, client_id)
+        return Response({"success": True, "data": data}, status=status.HTTP_200_OK)
+
+
+# ── Client Endpoints ────────────────────────────────────────────────────────
+
+class ClientAssignedTrainerAPIView(APIView):
+    """
+    GET /api/client-management/client/trainer/
+    Returns the trainer currently assigned to the authenticated client.
+    Used by the Client Dashboard — no admin permissions required.
+    """
+    permission_classes = [IsAuthenticated, IsClient]
+
+    def get(self, request):
+        data = get_client_assigned_trainer(request.user)
         return Response({"success": True, "data": data}, status=status.HTTP_200_OK)

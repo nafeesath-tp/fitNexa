@@ -24,11 +24,11 @@ const ClientLayout = () => {
   };
 
   const navLinks = [
-    { label: 'Home',          path: '/client/home'         },
-    { label: 'Workouts',      path: '/client/videos'       },
-    { label: 'Plans',         path: '/client/plans'        },
-    { label: 'Subscription',  path: '/client/subscription' },
-    { label: 'My Profile',    path: '/client/profile'      },
+    { label: 'Dashboard',   path: '/client/dashboard'  },
+    { label: 'Home',        path: '/client/home'       },
+    { label: 'Videos',      path: '/client/videos'     },
+    { label: 'Plans',       path: '/client/plans'      },
+    { label: 'My Profile',  path: '/client/profile'    },
   ];
 
   return (

@@ -23,6 +23,11 @@ export const getHomeRoute = (user) => {
             if (user.is_profile_completed === false) {
                 return '/client/setup';
             }
+            // Active subscriber → personalized fitness dashboard
+            if (user.has_active_subscription === true) {
+                return '/client/dashboard';
+            }
+            // No subscription yet → marketing home page
             return '/client/home';
 
         case 'TRAINER': {

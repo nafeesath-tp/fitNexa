@@ -96,3 +96,32 @@ def get_trainer_client_detail(trainer_user, client_id):
         
     serializer = TrainerClientDetailSerializer(assignment)
     return serializer.data
+
+
+def get_client_assigned_trainer(client_user):
+    """
+    Returns the trainer currently assigned to the authenticated client.
+    Used by the Client Dashboard — no admin privileges required.
+    Returns None if the client has not been assigned a trainer yet.
+    """
+    try:
+        assignment = TrainerAssignment.objects.select_related(
+            "trainer", "trainer__trainer_profile", "trainer__trainer_profile__specialization"
+        ).get(client=client_user, is_active=True)
+        
+        trainer = assignment.trainer
+        tp = getattr(trainer, "trainer_profile", None)
+        return {
+            "id": trainer.id,
+            "email": trainer.email,
+            "first_name": tp.first_name if tp else "",
+            "last_name": tp.last_name if tp else "",
+            "specialization": tp.specialization.name if tp and tp.specialization else None,
+            "experience": tp.experience if tp else None,
+            "bio": tp.bio if tp else "",
+            "profile_image": tp.profile_image.url if tp and tp.profile_image else None,
+            "assigned_at": assignment.assigned_at,
+        }
+    except TrainerAssignment.DoesNotExist:
+        return None
+

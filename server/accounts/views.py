@@ -408,6 +408,22 @@ class MeAPIView(APIView):
             except Exception:
                 data["is_profile_completed"] = False
 
+            # Annotate subscription status so the frontend can route to dashboard.
+            try:
+                from subscriptions.models import ClientSubscription
+                from django.utils import timezone
+                active_sub = ClientSubscription.objects.filter(
+                    client=user,
+                    payment_status=ClientSubscription.PaymentStatus.ACTIVE,
+                ).order_by("-created_at").first()
+                has_active = (
+                    active_sub is not None
+                    and (active_sub.expires_at is None or active_sub.expires_at > timezone.now())
+                )
+                data["has_active_subscription"] = has_active
+            except Exception:
+                data["has_active_subscription"] = False
+
         return Response(
             {
                 "success": True,

@@ -83,6 +83,7 @@ export default function ClientPlans() {
         toast.success('Subscribed to Free plan!');
         setCurrentSubscription(sub);
         upsertHistoryItem(sub);
+        navigate('/client/dashboard');
         return;
       }
 
@@ -90,9 +91,10 @@ export default function ClientPlans() {
       // In production: open Razorpay modal here, then call confirm
       const confirmRes = await subscriptionApi.confirmPayment(sub.id);
       if (confirmRes.success) {
-        toast.success('Payment confirmed! Subscription is now active.');
+        toast.success('Payment confirmed! Your subscription is now active 🎉');
         setCurrentSubscription(confirmRes.data);
         upsertHistoryItem(confirmRes.data);
+        navigate('/client/dashboard');
       } else {
         toast.error(confirmRes.message || 'Payment confirmation failed.');
       }
