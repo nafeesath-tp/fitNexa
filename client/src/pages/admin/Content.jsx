@@ -388,36 +388,39 @@ export default function AdminContent() {
                     <span>{v.video_type}</span>
                   </div>
 
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleTogglePublish(v)}
                       title={v.is_published ? "Unpublish" : "Publish"}
-                      className="p-1.5 rounded-lg text-[#a0b0a8] hover:text-white hover:bg-white/5 transition-colors"
+                      className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[#a0b0a8] hover:text-white hover:bg-white/5 transition-colors text-xs font-medium"
                     >
                       {v.is_published ? (
-                        <ToggleRight className="w-5 h-5 text-[#10b981]" />
+                        <ToggleRight className="w-4 h-4 text-[#10b981]" />
                       ) : (
-                        <ToggleLeft className="w-5 h-5" />
+                        <ToggleLeft className="w-4 h-4" />
                       )}
+                      <span className="hidden sm:inline">{v.is_published ? "Published" : "Hidden"}</span>
                     </button>
 
                     <button
                       onClick={() => openEdit(v)}
-                      className="p-1.5 rounded-lg text-[#10b981] hover:bg-[#10b981]/10 transition-colors"
+                      className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[#10b981] hover:bg-[#10b981]/10 transition-colors text-xs font-medium"
                     >
                       <Pencil className="w-4 h-4" />
+                      <span className="hidden sm:inline">Edit</span>
                     </button>
 
                     <button
                       onClick={() => handleDelete(v.id)}
                       disabled={deletingId === v.id}
-                      className="p-1.5 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                      className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50 text-xs font-medium"
                     >
                       {deletingId === v.id ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
                         <Trash2 className="w-4 h-4" />
                       )}
+                      <span>Delete</span>
                     </button>
                   </div>
                 </div>
