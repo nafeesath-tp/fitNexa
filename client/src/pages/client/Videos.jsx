@@ -103,10 +103,10 @@ export default function ClientVideos() {
         <div>
           <h1 className="text-3xl font-extrabold text-white flex items-center gap-3">
             <Video className="w-8 h-8 text-primary" />
-            Training Video Library
+            Choose Your Workout
           </h1>
           <p className="text-muted text-sm mt-1">
-            Stream guided workouts categorized by Specialization, Difficulty, and Plan Tier
+            Select a category to start your daily training
           </p>
         </div>
 

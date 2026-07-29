@@ -1,8 +1,9 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import Avatar from '../ui/Avatar';
-import { Activity } from 'lucide-react';
+import { Activity, Lock } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import toast from 'react-hot-toast';
 
 const Navbar = ({ 
   logoText, 
@@ -15,6 +16,13 @@ const Navbar = ({
   transparent = false,
   borderless = false,
 }) => {
+  const location = useLocation();
+
+  const handleLockedClick = (e, message) => {
+    e.preventDefault();
+    toast.error(message || 'Access restricted. Please upgrade your plan.');
+  };
+
   return (
     <header className={cn(
       "sticky top-0 z-50 w-full pt-4",
@@ -38,15 +46,33 @@ const Navbar = ({
         
         {/* Navigation Links */}
         <nav className="flex items-center gap-8">
-          {links.map((link, idx) => (
-            <Link 
-              key={idx} 
-              to={link.path} 
-              className="text-sm font-medium text-gray-300 hover:text-white transition-colors"
-            >
-              {link.label}
-            </Link>
-          ))}
+          {links.map((link, idx) => {
+            const isActive = location.pathname.startsWith(link.path);
+            if (link.locked) {
+              return (
+                <div 
+                  key={idx} 
+                  className="flex items-center cursor-not-allowed text-sm font-medium text-gray-500 opacity-70"
+                  onClick={(e) => handleLockedClick(e, link.lockMessage)}
+                >
+                  <Lock className="w-4 h-4 mr-1.5" />
+                  {link.label}
+                </div>
+              );
+            }
+            return (
+              <Link 
+                key={idx} 
+                to={link.path} 
+                className={cn(
+                  "text-sm font-medium transition-colors",
+                  isActive ? "text-primary" : "text-gray-300 hover:text-white"
+                )}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
           
           {actions && (
             <div className="flex items-center gap-6 ml-4">

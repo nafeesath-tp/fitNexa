@@ -3,6 +3,7 @@ from django.db.models import Q
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from accounts.models import User
 from .models import TrainerAssignment
+from subscriptions.models import ClientSubscription
 from .serializers import (
     AdminClientAssignmentListSerializer,
     TrainerClientListSerializer,
@@ -18,15 +19,15 @@ def get_admin_client_assignments(query_params=None):
     query_params = query_params or {}
     queryset = User.objects.filter(role=User.Role.CLIENT).order_by("-created_at")
     
-    search = query_params.get("search")
-    if search:
+    search_query = query_params.get("search", "").strip()
+    if search_query:
         queryset = queryset.filter(
-            Q(email__icontains=search) | 
-            Q(client_profile__first_name__icontains=search) | 
-            Q(client_profile__last_name__icontains=search)
+            Q(first_name__icontains=search_query) |
+            Q(last_name__icontains=search_query) |
+            Q(email__icontains=search_query)
         )
         
-    status_filter = query_params.get("status")
+    status_filter = query_params.get("status", "").strip().lower()
     if status_filter == "assigned":
         queryset = queryset.filter(trainer_assignment__is_active=True)
     elif status_filter == "unassigned":
@@ -42,7 +43,13 @@ def assign_trainer_to_client(admin_user, client, trainer, notes=""):
     """
     Assigns or reassigns an approved trainer to a client.
     Uses update_or_create to seamlessly handle new assignments and reassignments.
+    Throws ValidationError if client is on a FREE plan.
     """
+    # Enforce subscription logic: FREE users cannot be assigned a trainer
+    active_sub = ClientSubscription.objects.filter(client=client, status='ACTIVE').first()
+    if not active_sub or active_sub.plan.name == 'FREE':
+        raise ValidationError("Trainers can only be assigned to clients on Group or Premium plans.")
+
     assignment, created = TrainerAssignment.objects.update_or_create(
         client=client,
         defaults={

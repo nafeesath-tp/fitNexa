@@ -7,7 +7,7 @@ import Navbar from '../components/layout/Navbar';
 import toast from 'react-hot-toast';
 
 const ClientLayout = () => {
-  const { clearAuth } = useAuthStore();
+  const { user, clearAuth } = useAuthStore();
   const { profile, clearProfile } = useClientStore();
   const navigate = useNavigate();
 
@@ -23,19 +23,26 @@ const ClientLayout = () => {
     }
   };
 
+  // Determine if AI features should be locked
+  const isFreePlan = !user?.subscription_plan_name || user?.subscription_plan_name === 'FREE';
+
   const navLinks = [
-    { label: 'Dashboard',   path: '/client/dashboard'  },
-    { label: 'My Workout',  path: '/client/workout'    },
-    { label: 'My Diet',     path: '/client/diet'       },
-    { label: 'Videos',      path: '/client/videos'     },
-    { label: 'Plans',       path: '/client/plans'      },
-    { label: 'My Profile',  path: '/client/profile'    },
+    { label: 'Dashboard',   path: '/client/dashboard' },
+    { label: 'Workouts',    path: '/client/videos' },
+    { 
+      label: 'AI Diet & Workout', 
+      path: '/client/workout',
+      locked: isFreePlan,
+      lockMessage: 'Upgrade to Group or Premium to access AI Diet & Workout'
+    },
+    { label: 'Subscription',path: '/client/plans' },
+    { label: 'Support',     path: '/client/support' },
   ];
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Navbar 
-        logoText="Client"
+        logoText=""
         logoPath="/client/home"
         links={navLinks}
         profilePath="/client/profile"
