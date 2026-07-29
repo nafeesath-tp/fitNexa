@@ -45,6 +45,7 @@ export default function AdminContent() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [activeVideo, setActiveVideo] = useState(null);
 
   // Filters
   const [search, setSearch] = useState("");
@@ -198,6 +199,17 @@ export default function AdminContent() {
     ADVANCED: "text-red-400",
   };
 
+  const getEmbedUrl = (url) => {
+    if (!url) return "";
+    const ytMatch = url.match(
+      /(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
+    );
+    if (ytMatch) {
+      return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1`;
+    }
+    return url;
+  };
+
   return (
     <div className="space-y-8">
       {/* ── Header ── */}
@@ -291,7 +303,17 @@ export default function AdminContent() {
               }`}
             >
               {/* Thumbnail / Video Preview */}
-              <div className="relative aspect-video bg-[#0c241c] overflow-hidden group">
+              <div 
+                className="relative aspect-video bg-[#0c241c] overflow-hidden group cursor-pointer"
+                onClick={() => setActiveVideo(v)}
+              >
+                {/* Play Button Overlay on Hover */}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-full bg-[#10b981] flex items-center justify-center text-black">
+                    <Play className="w-5 h-5 ml-1 fill-black" />
+                  </div>
+                </div>
+
                 {v.thumbnail_url ? (
                   <img
                     src={v.thumbnail_url}
@@ -614,6 +636,51 @@ export default function AdminContent() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Streaming Video Modal ── */}
+      {activeVideo && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
+          <div className="bg-[#112a21] border border-[#1a3a2e] rounded-2xl w-full max-w-4xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 bg-black/40 border-b border-[#1a3a2e]">
+              <div className="flex items-center gap-3">
+                <span className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
+                <h2 className="text-white font-bold text-lg line-clamp-1">
+                  {activeVideo.title}
+                </h2>
+              </div>
+              <button
+                onClick={() => setActiveVideo(null)}
+                className="p-1 rounded-lg text-[#a0b0a8] hover:text-white hover:bg-white/10 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Video Player Container */}
+            <div className="relative aspect-video bg-black w-full">
+              {activeVideo.video_type === "YOUTUBE" ? (
+                <iframe
+                  src={getEmbedUrl(activeVideo.video_url)}
+                  title={activeVideo.title}
+                  className="w-full h-full border-0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : (
+                <video
+                  src={activeVideo.video_url}
+                  controls
+                  autoPlay
+                  className="w-full h-full object-contain"
+                >
+                  Your browser does not support HTML5 video streaming.
+                </video>
+              )}
+            </div>
           </div>
         </div>
       )}
