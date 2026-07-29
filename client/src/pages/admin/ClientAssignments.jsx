@@ -285,11 +285,11 @@ const ClientAssignments = () => {
               >
                 <option value="">-- Choose an approved trainer --</option>
                 {approvedTrainers.map((t) => {
-                  const tName = `${t.name || t.first_name || ""} ${t.last_name || ""}`.trim() || t.email;
-                  const spec = t.specialization || t.specialization_name || "General";
-                  const workload = clients.filter(c => c.is_assigned && c.assigned_trainer && c.assigned_trainer.id === t.id).length;
+                  const tName = `${t.first_name || ""} ${t.last_name || ""}`.trim() || t.user?.email || "Trainer";
+                  const spec = t.specialization_name || "General";
+                  const workload = clients.filter(c => c.is_assigned && c.assigned_trainer && c.assigned_trainer.id === t.user?.id).length;
                   return (
-                    <option key={t.id} value={t.id}>
+                    <option key={t.id} value={t.user?.id}>
                       {tName} ({workload} {workload === 1 ? "client" : "clients"}) — {spec}
                     </option>
                   );
