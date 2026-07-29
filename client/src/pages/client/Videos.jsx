@@ -72,11 +72,11 @@ export default function ClientVideos() {
     setActiveVideo(v);
   };
 
-  // Convert youtube watch URL to embed URL
+  // Extract YouTube ID if possible
   const getEmbedUrl = (url) => {
     if (!url) return "";
     const ytMatch = url.match(
-      /(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
+      /(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?|shorts)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
     );
     if (ytMatch) {
       return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1`;

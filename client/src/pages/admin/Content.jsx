@@ -221,7 +221,7 @@ export default function AdminContent() {
   const getEmbedUrl = (url) => {
     if (!url) return "";
     const ytMatch = url.match(
-      /(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
+      /(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?|shorts)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
     );
     if (ytMatch) {
       return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1`;
@@ -404,7 +404,6 @@ export default function AdminContent() {
                         {v.estimated_calories} kcal
                       </span>
                     )}
-                    <span>{v.video_type}</span>
                   </div>
 
                   <div className="flex items-center gap-2">
