@@ -363,7 +363,11 @@ export default function ClientVideos() {
             </div>
 
             {/* Video Player Container */}
-            <div className="relative aspect-video bg-black w-full">
+            <div className={`relative bg-black w-full flex-shrink-0 ${
+              activeVideo.video_url?.includes('/shorts/') 
+                ? 'max-w-[400px] mx-auto aspect-[9/16]' 
+                : 'aspect-video'
+            }`}>
               {activeVideo.video_type === "YOUTUBE" ? (
                 <iframe
                   src={getEmbedUrl(activeVideo.video_url)}
