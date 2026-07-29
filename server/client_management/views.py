@@ -36,20 +36,30 @@ class AdminAssignTrainerAPIView(APIView):
     def post(self, request):
         serializer = AssignTrainerSerializer(data=request.data)
         if serializer.is_valid():
-            client = serializer.validated_data["client_id"]
-            trainer = serializer.validated_data["trainer_id"]
-            notes = serializer.validated_data.get("notes", "")
-            
-            assignment = assign_trainer_to_client(request.user, client, trainer, notes)
-            return Response(
-                {
-                    "success": True, 
-                    "message": f"Successfully assigned trainer {trainer.first_name or trainer.email} to {client.first_name or client.email}.",
-                    "data": {"assignment_id": assignment.id}
-                },
-                status=status.HTTP_201_CREATED
-            )
-        return Response({"success": False, "errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                client = serializer.validated_data["client_id"]
+                trainer = serializer.validated_data["trainer_id"]
+                notes = serializer.validated_data.get("notes", "")
+                assignment = assign_trainer_to_client(request.user, client, trainer, notes)
+                
+                t_name = getattr(trainer.trainer_profile, 'first_name', '') if hasattr(trainer, 'trainer_profile') else ''
+                c_name = getattr(client.client_profile, 'first_name', '') if hasattr(client, 'client_profile') else ''
+                
+                return Response(
+                    {
+                        "success": True, 
+                        "message": f"Successfully assigned trainer {t_name or trainer.email} to {c_name or client.email}.",
+                        "data": {"assignment_id": assignment.id}
+                    },
+                    status=status.HTTP_201_CREATED
+                )
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                return Response({"success": False, "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+        print("ASSIGN TRAINER VALIDATION ERRORS:", serializer.errors)
+        return Response({"success": False, "errors": serializer.errors, "message": "Validation failed"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class AdminReassignTrainerAPIView(APIView):
