@@ -32,7 +32,11 @@ export const contentApi = {
    * POST /api/content/admin/videos/
    */
   createAdminVideo: async (data) => {
-    const res = await api.post("/api/content/admin/videos/", data);
+    // If data is FormData, let the browser set the correct Content-Type (multipart/form-data)
+    const isFormData = data instanceof FormData;
+    const res = await api.post("/api/content/admin/videos/", data, {
+      headers: isFormData ? { "Content-Type": undefined } : undefined,
+    });
     return res.data;
   },
 
@@ -40,7 +44,10 @@ export const contentApi = {
    * PATCH /api/content/admin/videos/<id>/
    */
   updateAdminVideo: async (videoId, data) => {
-    const res = await api.patch(`/api/content/admin/videos/${videoId}/`, data);
+    const isFormData = data instanceof FormData;
+    const res = await api.patch(`/api/content/admin/videos/${videoId}/`, data, {
+      headers: isFormData ? { "Content-Type": undefined } : undefined,
+    });
     return res.data;
   },
 

@@ -26,6 +26,7 @@ const EMPTY_FORM = {
   description: "",
   video_type: "YOUTUBE",
   video_url: "",
+  video_file: null,
   thumbnail_url: "",
   specialization: "",
   difficulty: "BEGINNER",
@@ -100,6 +101,7 @@ export default function AdminContent() {
       description: v.description || "",
       video_type: v.video_type,
       video_url: v.video_url,
+      video_file: null,
       thumbnail_url: v.thumbnail_url || "",
       specialization: v.specialization || "",
       difficulty: v.difficulty,
@@ -119,19 +121,36 @@ export default function AdminContent() {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!form.title.trim() || !form.video_url.trim()) {
-      toast.error("Title and Video URL are required.");
+    if (!form.title.trim()) {
+      toast.error("Title is required.");
+      return;
+    }
+    if (form.video_type === "YOUTUBE" && !form.video_url.trim()) {
+      toast.error("Video URL is required for YouTube videos.");
+      return;
+    }
+    if (form.video_type === "CLOUDINARY" && !form.video_url.trim() && !form.video_file) {
+      toast.error("Either a Video File or a Video URL must be provided.");
       return;
     }
 
     setSaving(true);
     try {
-      const payload = {
-        ...form,
-        duration_minutes: Number(form.duration_minutes) || 10,
-        estimated_calories: form.estimated_calories ? Number(form.estimated_calories) : null,
-        specialization: form.specialization ? Number(form.specialization) : null,
-      };
+      const payload = new FormData();
+      payload.append("title", form.title);
+      payload.append("description", form.description);
+      payload.append("video_type", form.video_type);
+      payload.append("difficulty", form.difficulty);
+      payload.append("access_level", form.access_level);
+      payload.append("duration_minutes", Number(form.duration_minutes) || 10);
+      payload.append("is_featured", form.is_featured);
+      payload.append("is_published", form.is_published);
+      
+      if (form.specialization) payload.append("specialization", form.specialization);
+      if (form.estimated_calories) payload.append("estimated_calories", Number(form.estimated_calories));
+      if (form.thumbnail_url) payload.append("thumbnail_url", form.thumbnail_url);
+      if (form.video_url) payload.append("video_url", form.video_url);
+      if (form.video_file) payload.append("video_file", form.video_file);
 
       let res;
       if (editingVideo) {
@@ -464,16 +483,38 @@ export default function AdminContent() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="sm:col-span-2">
                   <label className="block text-xs font-semibold text-[#88a599] uppercase tracking-wider mb-1.5">
-                    Video URL *
+                    {form.video_type === "YOUTUBE" ? "Video URL *" : "Video File or URL *"}
                   </label>
-                  <input
-                    type="url"
-                    required
-                    value={form.video_url}
-                    onChange={(e) => setForm({ ...form, video_url: e.target.value })}
-                    placeholder="https://youtube.com/watch?v=..."
-                    className="w-full bg-[#0c241c] border border-[#1a3a2e] rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#10b981]"
-                  />
+                  {form.video_type === "YOUTUBE" ? (
+                    <input
+                      type="url"
+                      value={form.video_url}
+                      onChange={(e) => setForm({ ...form, video_url: e.target.value })}
+                      placeholder="https://youtube.com/watch?v=..."
+                      className="w-full bg-[#0c241c] border border-[#1a3a2e] rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#10b981]"
+                    />
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      <input
+                        type="file"
+                        accept="video/mp4,video/webm"
+                        onChange={(e) => setForm({ ...form, video_file: e.target.files[0], video_url: "" })}
+                        className="w-full bg-[#0c241c] border border-[#1a3a2e] rounded-xl px-3 py-2 text-[#a0b0a8] text-sm focus:outline-none file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-[#10b981] file:text-black hover:file:bg-[#0d9e6e] cursor-pointer transition-colors"
+                      />
+                      <div className="flex items-center gap-2">
+                        <div className="h-px bg-[#1a3a2e] flex-1"></div>
+                        <span className="text-[10px] text-[#5b7367] uppercase font-bold">OR PASTE URL</span>
+                        <div className="h-px bg-[#1a3a2e] flex-1"></div>
+                      </div>
+                      <input
+                        type="url"
+                        value={form.video_url}
+                        onChange={(e) => setForm({ ...form, video_url: e.target.value, video_file: null })}
+                        placeholder="https://res.cloudinary.com/.../video.mp4"
+                        className="w-full bg-[#0c241c] border border-[#1a3a2e] rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-[#10b981]"
+                      />
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-[#88a599] uppercase tracking-wider mb-1.5">

@@ -69,6 +69,10 @@ class ClientTrainingVideoSerializer(serializers.ModelSerializer):
         is_locked, _ = self._get_lock_info(obj)
         if is_locked:
             return None  # Security: never send stream URL for locked content
+            
+        if obj.video_file:
+            # For Cloudinary VideoMediaCloudinaryStorage, .url gives the stream link
+            return obj.video_file.url
         return obj.video_url
 
 
@@ -88,6 +92,7 @@ class AdminTrainingVideoSerializer(serializers.ModelSerializer):
             "description",
             "video_type",
             "video_url",
+            "video_file",
             "thumbnail_url",
             "specialization",
             "specialization_name",
@@ -105,6 +110,12 @@ class AdminTrainingVideoSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["id", "uploaded_by", "created_at", "updated_at"]
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if instance.video_file:
+            data['video_url'] = instance.video_file.url
+        return data
+
     def get_specialization_name(self, obj):
         return obj.specialization.name if obj.specialization else "General"
 
@@ -113,11 +124,15 @@ class AdminTrainingVideoSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         video_url = attrs.get("video_url", getattr(self.instance, "video_url", ""))
-        thumbnail_url = attrs.get("thumbnail_url", getattr(self.instance, "thumbnail_url", ""))
+        video_file = attrs.get("video_file", getattr(self.instance, "video_file", None))
         video_type = attrs.get("video_type", getattr(self.instance, "video_type", TrainingVideo.VideoType.YOUTUBE))
+        thumbnail_url = attrs.get("thumbnail_url", getattr(self.instance, "thumbnail_url", ""))
+
+        if not video_url and not video_file:
+            raise serializers.ValidationError({"video_url": "Either a Video URL or a Video File must be provided."})
 
         # Auto-extract thumbnail for YouTube videos if none provided
-        if video_type == TrainingVideo.VideoType.YOUTUBE and not thumbnail_url:
+        if video_type == TrainingVideo.VideoType.YOUTUBE and not thumbnail_url and video_url:
             # Match standard youtube watch URL or youtu.be short URL or embed URL
             yt_pattern = r"(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})"
             match = re.search(yt_pattern, video_url)

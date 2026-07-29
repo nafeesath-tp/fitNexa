@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from cloudinary_storage.storage import VideoMediaCloudinaryStorage
 
 
 class TrainingVideo(models.Model):
@@ -28,7 +29,14 @@ class TrainingVideo(models.Model):
     description = models.TextField(blank=True)
     
     video_type = models.CharField(max_length=20, choices=VideoType.choices, default=VideoType.YOUTUBE)
-    video_url = models.URLField(max_length=500, help_text="YouTube embed URL or Cloudinary video stream URL")
+    video_url = models.URLField(max_length=500, blank=True, null=True, help_text="YouTube embed URL or external video stream URL")
+    video_file = models.FileField(
+        upload_to="training_videos/", 
+        storage=VideoMediaCloudinaryStorage(),
+        blank=True, 
+        null=True,
+        help_text="Direct upload to Cloudinary"
+    )
     thumbnail_url = models.URLField(max_length=500, blank=True, null=True)
     
     # ── 3-Dimensional Categorization ─────────────────────────────────────────
