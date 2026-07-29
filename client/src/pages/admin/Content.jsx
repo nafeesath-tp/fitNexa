@@ -356,18 +356,18 @@ export default function AdminContent() {
                   {/* 3D Tags */}
                   <div className="flex flex-wrap items-center gap-2 mb-2.5">
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${tierBadge[v.access_level] || tierBadge.FREE}`}>
-                      {v.access_level}
+                      {v.access_level || 'FREE'}
                     </span>
                     <span className="text-xs text-[#a0b0a8] bg-[#0c241c] px-2 py-0.5 rounded-md border border-[#1a3a2e]">
-                      {v.specialization_name}
+                      {v.specialization_name || 'General'}
                     </span>
                     <span className={`text-xs font-semibold ${diffBadge[v.difficulty] || "text-white"}`}>
-                      • {v.difficulty.charAt(0) + v.difficulty.slice(1).toLowerCase()}
+                      • {v.difficulty ? v.difficulty.charAt(0) + v.difficulty.slice(1).toLowerCase() : 'Unknown'}
                     </span>
                   </div>
 
-                  <h3 className="text-lg font-bold text-white line-clamp-1" title={v.title}>
-                    {v.title}
+                  <h3 className="text-lg font-bold text-white line-clamp-1" title={v.title || 'Untitled'}>
+                    {v.title || 'Untitled'}
                   </h3>
                   {v.description && (
                     <p className="text-xs text-[#a0b0a8] line-clamp-2 mt-1">
