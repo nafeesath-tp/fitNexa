@@ -21,9 +21,9 @@ export default function Dashboard() {
   const fetchDashboardData = async () => {
     try {
       // Fetch assigned trainer
-      const trainerRes = await clientManagementApi.getAssignedTrainer();
-      if (trainerRes.success && trainerRes.data) {
-        setAssignedTrainer(trainerRes.data.trainer);
+      const trainerRes = await clientManagementApi.getMyAssignedTrainer();
+      if (trainerRes?.success && trainerRes.data) {
+        setAssignedTrainer(trainerRes.data);
       }
       
       // Fetch subscription to verify tier
