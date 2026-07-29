@@ -103,8 +103,8 @@ export default function Home() {
         {loading ? (
           <div className="text-emerald-400">Loading plans...</div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto text-left">
-            {plans.map((plan) => {
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto text-left">
+            {plans.filter(p => p.name !== 'FREE').map((plan) => {
               const isPremium = plan.name === 'PREMIUM';
               return (
                 <div 
@@ -127,8 +127,8 @@ export default function Home() {
                       <Check className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
                       Access to Video Library
                     </li>
-                    <li className={`flex items-start gap-3 text-sm ${plan.name !== 'FREE' ? 'text-gray-300' : 'text-gray-600'}`}>
-                      <Check className={`w-4 h-4 mt-0.5 shrink-0 ${plan.name !== 'FREE' ? 'text-emerald-500' : 'text-gray-600'}`} />
+                    <li className="flex items-start gap-3 text-sm text-gray-300">
+                      <Check className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
                       AI Diet & Workout Plan
                     </li>
                     <li className={`flex items-start gap-3 text-sm ${isPremium ? 'text-gray-300' : 'text-gray-600'}`}>

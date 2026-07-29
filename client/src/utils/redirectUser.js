@@ -19,15 +19,11 @@ export const getHomeRoute = (user) => {
     switch (user.role) {
 
         case 'CLIENT':
-            // No subscription yet → marketing home/subscription page
-            if (!user.has_active_subscription) {
-                return '/client/home';
-            }
-            // Active subscriber, but profile not yet completed → onboarding setup
+            // Profile not yet completed → onboarding setup
             if (user.is_profile_completed === false) {
                 return '/client/setup';
             }
-            // Active subscriber with completed profile → dashboard
+            // Profile completed → personalized fitness dashboard (free or paid)
             return '/client/dashboard';
 
         case 'TRAINER': {

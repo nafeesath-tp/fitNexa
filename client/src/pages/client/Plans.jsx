@@ -182,8 +182,8 @@ export default function ClientPlans() {
       </div>
 
       {/* Plan Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-        {plans.map((plan) => {
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start max-w-4xl mx-auto">
+        {plans.filter(p => p.name !== 'FREE').map((plan) => {
           const meta  = PLAN_META[plan.name] || PLAN_META.FREE;
           const Icon  = meta.icon;
           const price = billing === 'YEARLY' ? plan.price_yearly : plan.price_monthly;
