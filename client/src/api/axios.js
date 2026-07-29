@@ -54,7 +54,6 @@ api.interceptors.response.use(
             error.response?.status === 401 &&
             !originalRequest._retry &&
             !originalRequest.url.includes('/api/auth/token/refresh/') &&
-            !originalRequest.url.includes('/api/auth/me/') &&
             !originalRequest.url.includes('/api/auth/login/')
         ) {
             if (isRefreshing) {
