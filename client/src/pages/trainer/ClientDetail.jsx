@@ -132,8 +132,8 @@ const ClientDetail = () => {
       <div className="flex border-b border-[#23533d] gap-6">
         {[
           { id: "overview", label: "Health Overview", icon: Activity },
-          { id: "workouts", label: "Assigned Workouts (Module 8)", icon: Dumbbell },
-          { id: "diets", label: "Nutrition & Diet (Module 9)", icon: Utensils },
+          { id: "workouts", label: "Assigned Workouts", icon: Dumbbell },
+          { id: "diets", label: "Nutrition & Diet", icon: Utensils },
         ].map((tab) => {
           const Icon = tab.icon;
           return (
@@ -243,11 +243,11 @@ const ClientDetail = () => {
               </div>
             </div>
 
-            {/* Readiness Box for Modules 8 and 9 */}
+            {/* Readiness Box */}
             <div className="bg-gradient-to-br from-[#163829] to-[#0f241a] border border-emerald-500/30 rounded-2xl p-6 space-y-3">
-              <h4 className="font-bold text-white text-base">Module 8 & 9 Ready</h4>
+              <h4 className="font-bold text-white text-base">Ready for Action</h4>
               <p className="text-xs text-gray-300 leading-relaxed">
-                With client assignment verified under Module 7, you can now seamlessly construct custom workout routines and daily nutrition macros tailored to this client's BMI ({client.bmi || "N/A"}) and goal ({client.fitness_goal || "General Fitness"}).
+                With this client successfully assigned to you, you can now seamlessly construct custom workout routines and daily nutrition macros tailored to their BMI ({client.bmi || "N/A"}) and goal ({client.fitness_goal || "General Fitness"}).
               </p>
               <div className="pt-2 flex flex-col gap-2">
                 <Button

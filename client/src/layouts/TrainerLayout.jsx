@@ -95,13 +95,13 @@ const TrainerLayout = () => {
                 <img src={profile.profile_image} alt="Profile" className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-primary text-sm font-bold">
-                  {user?.first_name?.[0]}{user?.last_name?.[0]}
+                  {profile?.first_name?.[0]}{profile?.last_name?.[0]}
                 </div>
               )}
             </div>
             <div className="overflow-hidden">
-              <h4 className="text-sm font-bold text-white truncate">{user?.first_name} {user?.last_name}</h4>
-              <p className="text-xs text-primary truncate">{profile?.specialization?.name?.replace('_', ' ') || 'Senior Trainer'}</p>
+              <h4 className="text-sm font-bold text-white truncate">{profile?.first_name || 'Trainer'} {profile?.last_name || ''}</h4>
+              <p className="text-xs text-primary truncate">{profile?.specialization_name || profile?.specialization?.name?.replace('_', ' ') || 'Senior Trainer'}</p>
             </div>
           </div>
         </div>

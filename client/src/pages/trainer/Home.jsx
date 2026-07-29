@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTrainerStore } from '../../stores/trainerStore';
 import { trainerApi } from '../../services/trainer/trainerApi';
+import { clientManagementApi } from '../../services/clientManagementApi';
 import PageLoader from '../../components/ui/PageLoader';
 import { Card, CardContent } from '../../components/ui/Card';
 import toast from 'react-hot-toast';
@@ -9,9 +10,10 @@ import { Users, DollarSign, Activity, CalendarDays, MoreHorizontal, Filter, Cloc
 const Home = () => {
   const { profile, setProfile } = useTrainerStore();
   const [isFetching, setIsFetching] = useState(true);
+  const [clients, setClients] = useState([]);
 
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchProfileAndClients = async () => {
       try {
         if (!profile) {
           const response = await trainerApi.getProfile();
@@ -19,14 +21,20 @@ const Home = () => {
             setProfile(response.data);
           }
         }
+        
+        // Fetch clients for stats
+        const clientRes = await clientManagementApi.getTrainerMyClients();
+        if (clientRes.success) {
+          setClients(clientRes.data || []);
+        }
       } catch (error) {
-        toast.error('Failed to load profile data.');
+        console.error('Failed to load dashboard data:', error);
       } finally {
         setIsFetching(false);
       }
     };
 
-    fetchProfile();
+    fetchProfileAndClients();
   }, [profile, setProfile]);
 
   if (isFetching) {
@@ -60,8 +68,8 @@ const Home = () => {
               </div>
             </div>
             <p className="text-gray-400 text-sm mb-1">Total Clients</p>
-            <h3 className="text-3xl font-bold text-white mb-2">0</h3>
-            <p className="text-xs text-gray-500">No data available yet</p>
+            <h3 className="text-3xl font-bold text-white mb-2">{clients.length}</h3>
+            <p className="text-xs text-gray-500">Currently assigned to you</p>
           </CardContent>
         </Card>
 
