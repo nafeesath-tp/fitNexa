@@ -1,316 +1,258 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
-import { useSubscriptionStore } from '../../stores/subscriptionStore';
+import { useClientStore } from '../../stores/clientStore';
 import { clientManagementApi } from '../../services/clientManagementApi';
 import { subscriptionApi } from '../../services/subscriptionApi';
-import { workoutApi } from '../../services/workoutApi';
-import { useWorkoutStore } from '../../stores/workoutStore';
-import { dietApi } from '../../services/dietApi';
-import { useDietStore } from '../../stores/dietStore';
+import { Bell, Weight, Ruler, User, Flame, ArrowUpRight } from 'lucide-react';
 import toast from 'react-hot-toast';
-import {
-  Dumbbell, Utensils, Video, CreditCard, User,
-  Activity, Crown, Users, Star, ChevronRight,
-  TrendingUp, Calendar, Zap, Heart, UserCheck
-} from 'lucide-react';
-
-const PLAN_COLORS = {
-  PREMIUM: { bg: 'bg-yellow-500/10', border: 'border-yellow-500/30', text: 'text-yellow-400', icon: Crown },
-  GROUP:   { bg: 'bg-blue-500/10',   border: 'border-blue-500/30',   text: 'text-blue-400',   icon: Users },
-  FREE:    { bg: 'bg-gray-500/10',   border: 'border-gray-500/30',   text: 'text-gray-400',   icon: Star  },
-};
-
-const StatCard = ({ icon: Icon, label, value, sub, colorClass = 'text-emerald-400', onClick }) => (
-  <div
-    onClick={onClick}
-    className={`bg-[#163829] border border-[#23533d] rounded-2xl p-5 flex flex-col gap-3 ${onClick ? 'cursor-pointer hover:border-emerald-500/60 hover:shadow-lg hover:shadow-emerald-950/30 transition-all duration-200' : ''}`}
-  >
-    <div className={`w-10 h-10 rounded-xl flex items-center justify-center bg-[#0f241a] border border-[#1e4633] ${colorClass}`}>
-      <Icon className="w-5 h-5" />
-    </div>
-    <div>
-      <div className="text-xl font-bold text-white">{value}</div>
-      <div className="text-sm font-medium text-gray-300">{label}</div>
-      {sub && <div className="text-xs text-gray-500 mt-0.5">{sub}</div>}
-    </div>
-  </div>
-);
-
-const QuickLink = ({ icon: Icon, label, desc, to, color = 'text-emerald-400' }) => (
-  <Link
-    to={to}
-    className="group bg-[#163829] border border-[#23533d] hover:border-emerald-500/50 rounded-2xl p-4 flex items-center gap-4 transition-all duration-200 hover:shadow-lg hover:shadow-emerald-950/30"
-  >
-    <div className={`w-10 h-10 rounded-xl flex items-center justify-center bg-[#0f241a] border border-[#1e4633] ${color} group-hover:scale-110 transition-transform`}>
-      <Icon className="w-5 h-5" />
-    </div>
-    <div className="flex-1 min-w-0">
-      <div className="font-semibold text-white text-sm">{label}</div>
-      <div className="text-xs text-gray-400 truncate">{desc}</div>
-    </div>
-    <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-emerald-400 transition-colors" />
-  </Link>
-);
+import Avatar from '../../components/ui/Avatar';
 
 export default function Dashboard() {
-  const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { currentSubscription, setCurrentSubscription } = useSubscriptionStore();
-  const { currentWorkout, setCurrentWorkout } = useWorkoutStore();
-  const { currentDiet, setCurrentDiet } = useDietStore();
-
+  const { profile } = useClientStore();
+  
   const [assignedTrainer, setAssignedTrainer] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [subscription, setSubscription] = useState(null);
 
   useEffect(() => {
-    const init = async () => {
-      try {
-        setIsLoading(true);
-        const [trainerRes, subRes, workoutRes, dietRes] = await Promise.allSettled([
-          clientManagementApi.getMyAssignedTrainer(),
-          !currentSubscription ? subscriptionApi.getCurrent() : Promise.resolve({ success: false }),
-          workoutApi.getClientCurrentWorkout(),
-          dietApi.getClientCurrentDiet(),
-        ]);
-
-        if (trainerRes.status === 'fulfilled' && trainerRes.value?.success) {
-          setAssignedTrainer(trainerRes.value.data);
-        }
-        if (subRes.status === 'fulfilled' && subRes.value?.success) {
-          setCurrentSubscription(subRes.value.data);
-        }
-        if (workoutRes.status === 'fulfilled' && workoutRes.value?.success) {
-          setCurrentWorkout(workoutRes.value.data);
-        }
-        if (dietRes.status === 'fulfilled' && dietRes.value?.success) {
-          setCurrentDiet(dietRes.value.data);
-        }
-      } catch (err) {
-        toast.error('Failed to load dashboard.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    init();
+    fetchDashboardData();
   }, []);
 
-  const planName = currentSubscription?.plan?.name || 'FREE';
-  const planMeta = PLAN_COLORS[planName] || PLAN_COLORS.FREE;
-  const PlanIcon = planMeta.icon;
+  const fetchDashboardData = async () => {
+    try {
+      // Fetch assigned trainer
+      const trainerRes = await clientManagementApi.getAssignedTrainer();
+      if (trainerRes.success && trainerRes.data) {
+        setAssignedTrainer(trainerRes.data.trainer);
+      }
+      
+      // Fetch subscription to verify tier
+      const subRes = await subscriptionApi.getCurrentSubscription();
+      if (subRes.success && subRes.data) {
+        setSubscription(subRes.data);
+      }
+    } catch (error) {
+      console.error('Dashboard data fetch failed', error);
+    }
+  };
 
-  const trainerName = assignedTrainer
-    ? `${assignedTrainer.first_name || ''} ${assignedTrainer.last_name || ''}`.trim() || assignedTrainer.email
-    : null;
+  // Mock progress data based on the design
+  const weight = profile?.weight_kg || 75;
+  const height = profile?.height_cm ? (profile.height_cm / 100).toFixed(1) : 2.5;
+  const targetWeight = profile?.target_weight_kg || 60;
+  
+  // Calculate BMI
+  const heightInMeters = profile?.height_cm ? profile.height_cm / 100 : 2.5;
+  const bmi = heightInMeters ? (weight / (heightInMeters * heightInMeters)).toFixed(1) : 22.4;
+  let bmiCategory = "Healthy";
+  if (bmi < 18.5) bmiCategory = "Underweight";
+  else if (bmi > 25) bmiCategory = "Overweight";
+
+  // Calculate Progress (Assuming starting weight was higher)
+  const startWeight = weight + 25; // Dummy logic for UI visualization
+  const totalLossNeeded = startWeight - targetWeight;
+  const currentLoss = startWeight - weight;
+  const progressPct = totalLossNeeded > 0 ? Math.min(Math.round((currentLoss / totalLossNeeded) * 100), 100) : 60;
 
   return (
-    <div className="min-h-screen bg-[#0b1a12] text-white pb-12">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-8">
-
-        {/* ── Welcome Banner ─────────────────────────────────────────────── */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-[#163829] via-[#112a21] to-[#0b1a12] border border-[#23533d] rounded-3xl p-7 shadow-2xl">
-          {/* background decorative icon */}
-          <div className="absolute right-6 top-1/2 -translate-y-1/2 opacity-5 pointer-events-none">
-            <Activity className="w-48 h-48 text-emerald-400" />
+    <div className="bg-[#0b120f] min-h-[calc(100vh-80px)] text-gray-100 font-sans p-6 md:p-8">
+      
+      {/* Header */}
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-extrabold text-white">Good Morning, {user?.first_name || 'Fitness'} {user?.last_name || 'Enthusiast'}</h1>
+          <div className="inline-flex items-center space-x-2 bg-emerald-500/10 text-emerald-400 text-xs font-bold px-3 py-1.5 rounded-lg mt-3 border border-emerald-500/20">
+            <span>WELCOME BACK</span>
+            <span>👋</span>
           </div>
+        </div>
+        <div className="flex items-center gap-6">
+          <button className="bg-emerald-500 hover:bg-emerald-400 text-[#0b120f] font-bold py-3 px-6 rounded-xl transition-all hidden md:block">
+            Upcoming Sessions
+          </button>
+        </div>
+      </div>
 
-          <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-emerald-400 text-xs font-semibold tracking-widest uppercase">Active Dashboard</span>
+      {/* Main Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        {/* Left Column */}
+        <div className="lg:col-span-5 space-y-6">
+          
+          {/* Top Metrics Cards */}
+          <div className="grid grid-cols-3 gap-4">
+            <div className="bg-[#111c17] border border-emerald-900/30 p-5 rounded-2xl flex flex-col justify-between">
+              <div className="flex items-center gap-2 text-emerald-400 mb-4">
+                <Weight className="w-4 h-4" />
+                <span className="text-xs font-bold">Weight</span>
               </div>
-              <h1 className="text-3xl font-extrabold text-white tracking-tight">
-                Welcome back{user?.email ? `, ${user.email.split('@')[0]}` : ''}! 🌿
-              </h1>
-              <p className="text-gray-400 mt-1 text-sm">Your personalized fitness workspace is ready.</p>
+              <div className="text-2xl font-bold text-white">{weight} <span className="text-xs text-gray-400 font-normal">kg</span></div>
+            </div>
+            
+            <div className="bg-[#111c17] border border-emerald-900/30 p-5 rounded-2xl flex flex-col justify-between">
+              <div className="flex items-center gap-2 text-emerald-400 mb-4">
+                <Ruler className="w-4 h-4" />
+                <span className="text-xs font-bold">Height</span>
+              </div>
+              <div className="text-2xl font-bold text-white">{height} <span className="text-xs text-gray-400 font-normal">m</span></div>
             </div>
 
-            {/* Plan Badge */}
-            <div className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl border ${planMeta.bg} ${planMeta.border} shrink-0`}>
-              <PlanIcon className={`w-5 h-5 ${planMeta.text}`} />
+            <div className="bg-[#111c17] border border-emerald-900/30 p-5 rounded-2xl flex flex-col justify-between">
+              <div className="flex items-center gap-2 text-emerald-400 mb-4">
+                <User className="w-4 h-4" />
+                <span className="text-xs font-bold">Age</span>
+              </div>
+              <div className="text-2xl font-bold text-white">25 <span className="text-xs text-gray-400 font-normal">yrs</span></div>
+            </div>
+          </div>
+
+          {/* BMI Insights */}
+          <div className="bg-[#111c17] border border-emerald-900/30 p-6 rounded-2xl">
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full border border-emerald-500/50 flex items-center justify-center text-emerald-400">i</div>
+                <span className="font-bold text-white">BMI Insights</span>
+              </div>
+              <div className="bg-emerald-500/10 text-emerald-400 text-xs font-bold px-3 py-1 rounded-md">
+                {bmiCategory}
+              </div>
+            </div>
+            
+            <p className="text-xs text-gray-400 mb-4">Based on height & weight metrics</p>
+            
+            <div className="mb-6">
+              <span className="text-3xl font-extrabold text-white">{bmi}</span>
+              <span className="text-xs text-gray-400 ml-1">kg/m²</span>
+            </div>
+
+            {/* Gradient Bar */}
+            <div className="relative h-2 w-full rounded-full bg-gray-800 flex overflow-hidden mb-2">
+              <div className="h-full w-1/3 bg-blue-500"></div>
+              <div className="h-full w-1/3 bg-emerald-500"></div>
+              <div className="h-full w-1/3 bg-red-500"></div>
+            </div>
+            <div className="flex justify-between text-[10px] text-gray-500 font-medium uppercase tracking-wider mb-6">
+              <span>Under</span>
+              <span>Normal</span>
+              <span>Over</span>
+            </div>
+
+            <p className="text-xs text-gray-400 leading-relaxed">
+              <span className="text-emerald-400 font-bold mr-1">Note:</span> 
+              Your BMI indicates a healthy weight. Maintain your current calorie intake and activity levels.
+            </p>
+          </div>
+        </div>
+
+        {/* Right Column */}
+        <div className="lg:col-span-7 space-y-6">
+          
+          {/* Weight Loss Progress */}
+          <div className="bg-[#111c17] border border-emerald-900/30 p-6 rounded-2xl">
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-2 text-red-400">
+                <Flame className="w-5 h-5" />
+                <span className="font-bold text-white">Weight Loss</span>
+              </div>
+              <div className="bg-red-500/10 text-red-400 text-xs font-bold px-3 py-1 rounded-md">
+                {progressPct}%
+              </div>
+            </div>
+            
+            <div className="flex justify-between items-end mb-3">
+              <div className="text-3xl font-extrabold text-white">{weight} <span className="text-xs text-gray-400 font-normal">kg</span></div>
+              <div className="text-xs text-gray-500">Target: {targetWeight}kg</div>
+            </div>
+            
+            <div className="h-2 w-full bg-[#0b120f] rounded-full overflow-hidden border border-emerald-900/20">
+              <div className="h-full bg-red-500 rounded-full" style={{ width: `${progressPct}%` }}></div>
+            </div>
+          </div>
+
+          {/* Bottom Grid: Monthly Progress & Trainers */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            {/* Monthly Progress */}
+            <div className="bg-[#111c17] border border-emerald-900/30 p-6 rounded-2xl flex flex-col justify-between h-[300px]">
               <div>
-                <div className={`text-xs font-bold ${planMeta.text}`}>{planName} PLAN</div>
-                <div className="text-[10px] text-gray-400">Active subscription</div>
+                <div className="flex justify-between items-center mb-1">
+                  <h3 className="font-bold text-white">Monthly Progress</h3>
+                  <span className="text-xs text-gray-500 flex items-center">This Week <ArrowUpRight className="w-3 h-3 ml-1" /></span>
+                </div>
+                <p className="text-xs text-emerald-400 font-medium">80% achieved this month</p>
+              </div>
+              
+              <div className="flex justify-between items-end h-32 mt-auto gap-2">
+                {[
+                  { day: 'Mon', h: '30%', active: false },
+                  { day: 'Tue', h: '40%', active: false },
+                  { day: 'Wed', h: '25%', active: false },
+                  { day: 'Thu', h: '85%', active: true },
+                  { day: 'Fri', h: '50%', active: false },
+                  { day: 'Sat', h: '60%', active: false },
+                ].map((bar, i) => (
+                  <div key={i} className="flex flex-col items-center w-full gap-2">
+                    <div className="w-full h-full bg-[#0b120f] rounded-t-sm flex items-end">
+                      <div className={`w-full rounded-t-sm ${bar.active ? 'bg-emerald-500' : 'bg-emerald-900/40'}`} style={{ height: bar.h }}></div>
+                    </div>
+                    <span className="text-[10px] text-gray-500">{bar.day}</span>
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* ── Stats Row ──────────────────────────────────────────────────── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Assigned Trainer card */}
-          <StatCard
-            icon={UserCheck}
-            label="Personal Trainer"
-            value={trainerName || (isLoading ? '...' : 'Unassigned')}
-            sub={assignedTrainer?.specialization || (trainerName ? undefined : 'Admin assigns after subscription')}
-            colorClass={assignedTrainer ? 'text-emerald-400' : 'text-gray-500'}
-            onClick={assignedTrainer ? undefined : undefined}
-          />
-
-          {/* Workout Plan */}
-          <StatCard
-            icon={Dumbbell}
-            label="Workout Plan"
-            value={currentWorkout ? currentWorkout.plan.title : "Not Assigned"}
-            sub={currentWorkout ? `${currentWorkout.plan.duration_weeks} weeks (${currentWorkout.completed_days}/${currentWorkout.total_days} days)` : "Waiting for trainer"}
-            colorClass="text-orange-400"
-            onClick={() => navigate(currentWorkout ? '/client/workout' : '/client/videos')}
-          />
-
-          {/* Diet Plan */}
-          <StatCard
-            icon={Utensils}
-            label="Diet Plan"
-            value={currentDiet ? currentDiet.plan.title : "Not Assigned"}
-            sub={currentDiet ? `${currentDiet.plan.calories} kcal/day (${currentDiet.progress_text} meals)` : "Waiting for trainer"}
-            colorClass="text-green-400"
-            onClick={() => navigate(currentDiet ? '/client/diet' : '/client/dashboard')}
-          />
-
-          {/* Progress */}
-          <StatCard
-            icon={TrendingUp}
-            label="Overall Progress"
-            value={currentWorkout ? `${currentWorkout.progress_pct}%` : currentDiet ? `${currentDiet.progress_pct}%` : "0%"}
-            sub={currentWorkout ? `${currentWorkout.completed_days} of ${currentWorkout.total_days} workouts done` : currentDiet ? `${currentDiet.progress_text} meals logged` : "Complete workouts/meals to track"}
-            colorClass="text-purple-400"
-          />
-        </div>
-
-        {/* ── Main Content ───────────────────────────────────────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-          {/* Trainer Panel */}
-          <div className="lg:col-span-1 bg-[#163829] border border-[#23533d] rounded-2xl p-6 space-y-4">
-            <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <UserCheck className="w-5 h-5 text-emerald-400" /> My Trainer
-            </h2>
-
-            {isLoading ? (
-              <div className="flex justify-center py-6">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-emerald-500" />
+            {/* Trainers List */}
+            <div className="bg-[#111c17] border border-emerald-900/30 p-6 rounded-2xl h-[300px]">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="font-bold text-white">Trainers</h3>
+                <span className="text-xs text-emerald-400 font-medium cursor-pointer">See All</span>
               </div>
-            ) : assignedTrainer ? (
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  {assignedTrainer.profile_image ? (
-                    <img src={assignedTrainer.profile_image} alt={trainerName} className="w-14 h-14 rounded-2xl object-cover border border-[#23533d]" />
-                  ) : (
-                    <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold text-xl">
-                      {trainerName?.[0]?.toUpperCase() || 'T'}
+              
+              <div className="space-y-4">
+                {assignedTrainer ? (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Avatar image={assignedTrainer.profile_image} name={`${assignedTrainer.first_name} ${assignedTrainer.last_name}`} size="md" />
+                      <div>
+                        <div className="text-sm font-bold text-white">{assignedTrainer.first_name} {assignedTrainer.last_name}</div>
+                        <div className="text-xs text-gray-400">{assignedTrainer.specialization || 'Personal Trainer'}</div>
+                      </div>
                     </div>
-                  )}
-                  <div>
-                    <div className="font-bold text-white">{trainerName}</div>
-                    <div className="text-xs text-emerald-400">{assignedTrainer.specialization || 'General Fitness'}</div>
-                    {assignedTrainer.experience && (
-                      <div className="text-xs text-gray-400">{assignedTrainer.experience} yrs experience</div>
-                    )}
+                    <button className="bg-emerald-500/10 text-emerald-400 text-xs font-bold px-3 py-1.5 rounded-md hover:bg-emerald-500/20 transition-all border border-emerald-500/20">
+                      Chat
+                    </button>
                   </div>
-                </div>
-                {assignedTrainer.bio && (
-                  <p className="text-xs text-gray-400 leading-relaxed border-t border-[#1e4633] pt-3">
-                    "{assignedTrainer.bio.slice(0, 120)}{assignedTrainer.bio.length > 120 ? '…' : ''}"
-                  </p>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-emerald-900/50 flex items-center justify-center text-emerald-400 text-xs font-bold">CW</div>
+                        <div>
+                          <div className="text-sm font-bold text-white">Cameron Williamson</div>
+                          <div className="text-xs text-gray-400">Yoga Specialist</div>
+                        </div>
+                      </div>
+                      <button className="bg-emerald-500/10 text-emerald-400 text-xs font-bold px-3 py-1.5 rounded-md hover:bg-emerald-500/20 transition-all border border-emerald-500/20">
+                        Chat
+                      </button>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-blue-900/50 flex items-center justify-center text-blue-400 text-xs font-bold">BF</div>
+                        <div>
+                          <div className="text-sm font-bold text-white">Blueberry Fitness</div>
+                          <div className="text-xs text-gray-400">Meditation Coach</div>
+                        </div>
+                      </div>
+                      <button className="bg-emerald-500/10 text-emerald-400 text-xs font-bold px-3 py-1.5 rounded-md hover:bg-emerald-500/20 transition-all border border-emerald-500/20">
+                        Chat
+                      </button>
+                    </div>
+                  </>
                 )}
-                <div className="text-xs text-gray-500">
-                  Assigned on {assignedTrainer.assigned_at ? new Date(assignedTrainer.assigned_at).toLocaleDateString() : '—'}
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-6 space-y-2">
-                <UserCheck className="w-10 h-10 text-gray-600 mx-auto" />
-                <p className="text-sm text-gray-400">No trainer assigned yet.</p>
-                <p className="text-xs text-gray-500">The admin will assign a certified trainer to your account.</p>
-              </div>
-            )}
-          </div>
-
-          {/* Today's Summary + Quick Links */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Today's Summary */}
-            <div className="bg-[#163829] border border-[#23533d] rounded-2xl p-6">
-              <h2 className="text-base font-bold text-white flex items-center gap-2 mb-4">
-                <Calendar className="w-5 h-5 text-emerald-400" /> Today's Plan
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Workout CTA */}
-                <div 
-                  onClick={() => navigate(currentWorkout ? '/client/workout' : '/client/videos')}
-                  className="bg-[#0f241a] border border-[#1e4633] rounded-xl p-4 flex items-center justify-between cursor-pointer hover:border-emerald-500/40 transition-all"
-                >
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <Dumbbell className="w-4 h-4 text-orange-400" />
-                      <span className="text-sm font-semibold text-white">Workout Plan</span>
-                    </div>
-                    <p className="text-xs text-gray-400 truncate max-w-[160px]">
-                      {currentWorkout ? currentWorkout.plan.title : "No plan assigned yet"}
-                    </p>
-                  </div>
-                  {currentWorkout ? (
-                    <span className="text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-1 rounded-lg font-bold shrink-0">
-                      {currentWorkout.progress_pct}%
-                    </span>
-                  ) : (
-                    <span className="text-xs bg-gray-700/50 text-gray-400 border border-gray-600 px-2 py-1 rounded-lg shrink-0">
-                      Waiting
-                    </span>
-                  )}
-                </div>
-
-                {/* Diet CTA */}
-                <div
-                  onClick={() => navigate(currentDiet ? '/client/diet' : '/client/dashboard')}
-                  className={`bg-[#0f241a] border border-[#1e4633] rounded-xl p-4 flex items-center justify-between ${currentDiet ? 'cursor-pointer hover:border-green-500/50 transition-colors' : ''}`}
-                >
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <Utensils className="w-4 h-4 text-green-400" />
-                      <span className="text-sm font-semibold text-white">Diet Plan</span>
-                    </div>
-                    <p className="text-xs text-gray-400 truncate max-w-[160px]">
-                      {currentDiet ? currentDiet.plan.title : "No plan assigned yet"}
-                    </p>
-                  </div>
-                  {currentDiet ? (
-                    <span className="text-xs bg-green-500/20 text-green-300 border border-green-500/30 px-2.5 py-1 rounded-lg font-bold shrink-0">
-                      {currentDiet.progress_text}
-                    </span>
-                  ) : (
-                    <span className="text-xs bg-gray-700/50 text-gray-400 border border-gray-600 px-2 py-1 rounded-lg shrink-0">
-                      Waiting
-                    </span>
-                  )}
-                </div>
               </div>
             </div>
 
-            {/* Quick Links */}
-            <div>
-              <h2 className="text-base font-bold text-white mb-3 flex items-center gap-2">
-                <Zap className="w-5 h-5 text-emerald-400" /> Quick Access
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <QuickLink icon={Utensils}    label="My Diet Plan"     desc="Track daily meals & macros"     to="/client/diet"         color="text-green-400" />
-                <QuickLink icon={Video}       label="Training Videos"  desc="Browse your content library"    to="/client/videos"       color="text-blue-400" />
-                <QuickLink icon={CreditCard}  label="Subscription"     desc={`${planName} plan — manage billing`} to="/client/plans"   color="text-yellow-400" />
-                <QuickLink icon={User}        label="My Profile"       desc="Update personal details"        to="/client/profile"      color="text-pink-400" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Motivational Footer ─────────────────────────────────────────── */}
-        <div className="bg-gradient-to-r from-emerald-900/20 to-[#0f241a] border border-emerald-500/20 rounded-2xl p-5 flex items-center gap-4">
-          <Heart className="w-8 h-8 text-emerald-400 shrink-0" />
-          <div>
-            <div className="font-bold text-white text-sm">Your journey starts here.</div>
-            <div className="text-xs text-gray-400 mt-0.5">
-              Once your trainer assigns a workout and diet plan, this dashboard becomes your daily command center.
-            </div>
           </div>
         </div>
       </div>
