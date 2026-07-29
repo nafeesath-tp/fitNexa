@@ -46,7 +46,7 @@ def assign_trainer_to_client(admin_user, client, trainer, notes=""):
     Throws ValidationError if client is on a FREE plan.
     """
     # Enforce subscription logic: FREE users cannot be assigned a trainer
-    active_sub = ClientSubscription.objects.filter(client=client, status='ACTIVE').first()
+    active_sub = ClientSubscription.objects.filter(client=client, payment_status='ACTIVE').first()
     if not active_sub or active_sub.plan.name == 'FREE':
         raise ValidationError("Trainers can only be assigned to clients on Group or Premium plans.")
 
