@@ -19,7 +19,16 @@ const VerifyOTP = () => {
 
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
-  const [timer, setTimer] = useState(300); // 5 minutes in seconds
+  const [timer, setTimer] = useState(() => {
+    if (!email) return 300;
+    const storedTime = sessionStorage.getItem(`otpExpireTime_${email}`);
+    if (storedTime) {
+      const remaining = Math.floor((parseInt(storedTime, 10) - Date.now()) / 1000);
+      return remaining > 0 ? remaining : 0;
+    }
+    sessionStorage.setItem(`otpExpireTime_${email}`, (Date.now() + 300 * 1000).toString());
+    return 300;
+  });
 
   useEffect(() => {
     let interval;
@@ -57,6 +66,7 @@ const VerifyOTP = () => {
       
       if (response.data.success) {
         toast.success(response.data.message || 'Email verified successfully!');
+        sessionStorage.removeItem(`otpExpireTime_${email}`);
         navigate('/login', { replace: true });
       } else {
         toast.error(response.data.message || 'Invalid OTP.');
@@ -80,6 +90,7 @@ const VerifyOTP = () => {
       
       if (response.data.success) {
         toast.success(response.data.message || 'OTP resent successfully!');
+        sessionStorage.setItem(`otpExpireTime_${email}`, (Date.now() + 300 * 1000).toString());
         setTimer(300); // Reset timer to 5 minutes
       } else {
         toast.error(response.data.message || 'Failed to resend OTP.');

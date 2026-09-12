@@ -10,6 +10,7 @@ from .services import (
     add_week, add_day, add_exercise, delete_exercise,
     assign_plan_to_client, get_trainer_assignments,
     get_client_current_workout, complete_workout_day, get_client_progress,
+    assign_workout_to_group,
 )
 
 

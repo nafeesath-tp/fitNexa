@@ -19,11 +19,14 @@ export const getHomeRoute = (user) => {
     switch (user.role) {
 
         case 'CLIENT':
-            // Profile not yet completed → onboarding setup
+            // If basic info (like first_name) is missing, go to basic setup
+            if (!user.first_name || user.first_name === 'Fitness') {
+                return '/client/basic-setup';
+            }
             if (user.is_profile_completed === false) {
                 return '/client/setup';
             }
-            // Profile completed → personalized fitness dashboard (free or paid)
+            // Profile fully completed
             return '/client/dashboard';
 
         case 'TRAINER': {

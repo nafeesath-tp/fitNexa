@@ -19,6 +19,7 @@ const ProfileForm = ({ initialValues = {}, onSubmit, isLoading, isEditMode = fal
   const [step, setStep] = useState(1);
   const [isImageModalOpen, setImageModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [removeImage, setRemoveImage] = useState(false);
 
   const { register, handleSubmit, trigger, control, formState: { errors } } = useForm({
     resolver: zodResolver(clientProfileSchema),
@@ -75,6 +76,9 @@ const ProfileForm = ({ initialValues = {}, onSubmit, isLoading, isEditMode = fal
       console.log('✅ Form submission allowed');
       setIsSubmitting(true);
       handleSubmit((data) => {
+        if (removeImage) {
+          data.remove_profile_image = 'true';
+        }
         onSubmit(data);
         // Reset after a delay
         setTimeout(() => setIsSubmitting(false), 2000);
@@ -170,11 +174,22 @@ const ProfileForm = ({ initialValues = {}, onSubmit, isLoading, isEditMode = fal
                       {...register('profile_image')}
                     />
                     <FormError error={errors.profile_image} />
+                    <p className="text-xs text-muted mt-1">Only .jpg, .jpeg, .png, and .webp allowed. PDF not supported.</p>
 
-                    {isEditMode && initialValues.profile_image && typeof initialValues.profile_image === 'string' && (
+                    {isEditMode && initialValues.profile_image && typeof initialValues.profile_image === 'string' && !removeImage && (
                       <p className="text-sm text-muted mt-2">
                         Current image: <span className="text-gray-300 font-mono text-xs">{initialValues.profile_image.split('/').pop()}</span>{' '}
-                        (<button type="button" onClick={() => setImageModalOpen(true)} className="text-primary hover:underline font-medium">View</button>)
+                        (
+                        <button type="button" onClick={() => setImageModalOpen(true)} className="text-primary hover:underline font-medium">View</button>
+                        {' | '}
+                        <button type="button" onClick={() => setRemoveImage(true)} className="text-red-500 hover:underline font-medium">Remove</button>
+                        )
+                      </p>
+                    )}
+                    {removeImage && (
+                      <p className="text-sm text-red-500 mt-2">
+                        Current image will be removed.
+                        <button type="button" onClick={() => setRemoveImage(false)} className="text-primary hover:underline font-medium ml-2">Undo</button>
                       </p>
                     )}
                   </FormField>

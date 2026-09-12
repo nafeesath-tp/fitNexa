@@ -79,7 +79,9 @@ api.interceptors.response.use(
                 // Clear Zustand auth state
                 // (Import lazily to avoid circular dependency)
                 const { useAuthStore } = await import('../stores/authStore');
+                const { useSubscriptionStore } = await import('../stores/subscriptionStore');
                 useAuthStore.getState().clearAuth();
+                useSubscriptionStore.getState().clearSubscriptionState();
 
                 // Only redirect to /login if we are NOT already on a public/auth route
                 const publicPaths = ['/login', '/admin-login', '/signup', '/verify-otp', '/forgot-password', '/'];

@@ -175,12 +175,14 @@ class ClientProfileAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        except Exception:
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
             return Response(
                 {
                     "success": False,
                     "message": "Something went wrong. Please try again later.",
-                    "errors": {},
+                    "errors": {"detail": str(e)},
                 },
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )

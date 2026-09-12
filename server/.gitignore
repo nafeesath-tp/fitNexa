@@ -24,3 +24,9 @@ media/
 Thumbs.db
 
 .env.docker
+
+# Stripe CLI binaries (do not commit executables)
+stripe.exe
+stripe.zip
+*.exe
+*.zip

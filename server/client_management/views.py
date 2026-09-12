@@ -11,6 +11,9 @@ from .services import (
     get_trainer_assigned_clients,
     get_trainer_client_detail,
     get_client_assigned_trainer,
+    create_trainer_group, get_trainer_groups, get_trainer_group_detail,
+    update_trainer_group, delete_trainer_group,
+    add_member_to_group, remove_member_from_group, get_group_eligible_clients,
 )
 
 
@@ -125,3 +128,129 @@ class ClientAssignedTrainerAPIView(APIView):
     def get(self, request):
         data = get_client_assigned_trainer(request.user)
         return Response({"success": True, "data": data}, status=status.HTTP_200_OK)
+
+
+# ── Trainer: Group Management ───────────────────────────────────────────────
+
+from accounts.permissions import IsApprovedTrainer
+from workout_plans.services import assign_workout_to_group
+from diet_plans.services import assign_diet_to_group
+
+
+class TrainerGroupListCreateAPIView(APIView):
+    """
+    GET  /api/client-management/trainer/groups/   — list my groups
+    POST /api/client-management/trainer/groups/   — create a new group
+    """
+    permission_classes = [IsAuthenticated, IsApprovedTrainer]
+
+    def get(self, request):
+        data = get_trainer_groups(request.user)
+        return Response({"success": True, "data": data})
+
+    def post(self, request):
+        data = create_trainer_group(request.user, request.data)
+        return Response({"success": True, "data": data}, status=status.HTTP_201_CREATED)
+
+
+class TrainerGroupDetailAPIView(APIView):
+    """
+    GET    /api/client-management/trainer/groups/<group_id>/  — full detail + members
+    PATCH  /api/client-management/trainer/groups/<group_id>/  — update name/size
+    DELETE /api/client-management/trainer/groups/<group_id>/  — soft-delete
+    """
+    permission_classes = [IsAuthenticated, IsApprovedTrainer]
+
+    def get(self, request, group_id):
+        data = get_trainer_group_detail(request.user, group_id)
+        return Response({"success": True, "data": data})
+
+    def patch(self, request, group_id):
+        data = update_trainer_group(request.user, group_id, request.data)
+        return Response({"success": True, "data": data})
+
+    def delete(self, request, group_id):
+        delete_trainer_group(request.user, group_id)
+        return Response({"success": True, "message": "Group deactivated."})
+
+
+class TrainerGroupMemberAPIView(APIView):
+    """
+    POST   /api/client-management/trainer/groups/<group_id>/members/
+           Body: { "trainer_assignment_id": 5 }   — add a client to the group
+
+    DELETE /api/client-management/trainer/groups/<group_id>/members/<ta_id>/
+           — remove a client from the group
+    """
+    permission_classes = [IsAuthenticated, IsApprovedTrainer]
+
+    def post(self, request, group_id):
+        ta_id = request.data.get("trainer_assignment_id")
+        if not ta_id:
+            return Response(
+                {"success": False, "message": "trainer_assignment_id is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        data = add_member_to_group(request.user, group_id, ta_id)
+        return Response({"success": True, "data": data}, status=status.HTTP_201_CREATED)
+
+
+class TrainerGroupMemberRemoveAPIView(APIView):
+    """
+    DELETE /api/client-management/trainer/groups/<group_id>/members/<ta_id>/
+    """
+    permission_classes = [IsAuthenticated, IsApprovedTrainer]
+
+    def delete(self, request, group_id, ta_id):
+        remove_member_from_group(request.user, group_id, ta_id)
+        return Response({"success": True, "message": "Member removed from group."})
+
+
+class TrainerGroupEligibleClientsAPIView(APIView):
+    """
+    GET /api/client-management/trainer/groups/<group_id>/eligible-clients/
+    Returns GROUP-plan clients assigned to this trainer who are not yet in any group.
+    """
+    permission_classes = [IsAuthenticated, IsApprovedTrainer]
+
+    def get(self, request, group_id):
+        data = get_group_eligible_clients(request.user, group_id)
+        return Response({"success": True, "data": data})
+
+
+class TrainerGroupAssignWorkoutAPIView(APIView):
+    """
+    POST /api/client-management/trainer/groups/<group_id>/assign-workout/
+    Body: { "plan_id": 3 }
+    Assigns a workout plan to the entire group. All members will see this plan.
+    """
+    permission_classes = [IsAuthenticated, IsApprovedTrainer]
+
+    def post(self, request, group_id):
+        plan_id = request.data.get("plan_id")
+        if not plan_id:
+            return Response(
+                {"success": False, "message": "plan_id is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        data = assign_workout_to_group(request.user, plan_id, group_id)
+        return Response({"success": True, "data": data}, status=status.HTTP_201_CREATED)
+
+
+class TrainerGroupAssignDietAPIView(APIView):
+    """
+    POST /api/client-management/trainer/groups/<group_id>/assign-diet/
+    Body: { "plan_id": 5 }
+    Assigns a diet plan to the entire group. All members will see this plan.
+    """
+    permission_classes = [IsAuthenticated, IsApprovedTrainer]
+
+    def post(self, request, group_id):
+        plan_id = request.data.get("plan_id")
+        if not plan_id:
+            return Response(
+                {"success": False, "message": "plan_id is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        data = assign_diet_to_group(request.user, plan_id, group_id)
+        return Response({"success": True, "data": data}, status=status.HTTP_201_CREATED)

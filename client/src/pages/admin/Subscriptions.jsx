@@ -209,12 +209,12 @@ export default function AdminSubscriptions() {
                 <h2 className="text-lg font-bold text-white">{plan.name}</h2>
                 <div className="flex items-baseline gap-1 mt-1">
                   <span className="text-2xl font-bold text-white">
-                    ₹{Number(plan.price_monthly).toLocaleString()}
+                    ${Number(plan.price_monthly).toLocaleString()}
                   </span>
                   <span className="text-[#a0b0a8] text-sm">/month</span>
                 </div>
                 <p className="text-[#a0b0a8] text-xs mt-0.5">
-                  ₹{Number(plan.price_yearly).toLocaleString()} / year
+                  ${Number(plan.price_yearly).toLocaleString()} / year
                 </p>
               </div>
 
@@ -293,7 +293,7 @@ export default function AdminSubscriptions() {
                           {sub.payment_status}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-[#c0cfc8]">₹{Number(sub.amount_paid).toLocaleString()}</td>
+                      <td className="px-4 py-3 text-[#c0cfc8]">${Number(sub.amount_paid).toLocaleString()}</td>
                       <td className="px-4 py-3 text-[#a0b0a8]">
                         {sub.expires_at ? new Date(sub.expires_at).toLocaleDateString() : '—'}
                       </td>
@@ -341,7 +341,7 @@ export default function AdminSubscriptions() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-[#88a599] uppercase tracking-wider mb-1.5">
-                    Monthly Price (₹)
+                    Monthly Price ($)
                   </label>
                   <input
                     type="number"
@@ -354,7 +354,7 @@ export default function AdminSubscriptions() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-[#88a599] uppercase tracking-wider mb-1.5">
-                    Yearly Price (₹)
+                    Yearly Price ($)
                   </label>
                   <input
                     type="number"

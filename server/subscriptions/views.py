@@ -2,6 +2,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
+import stripe
+from django.conf import settings
+from django.views.decorators.csrf import csrf_exempt
 
 from accounts.permissions import IsAdmin, IsClient
 
@@ -174,17 +177,13 @@ class AdminSubscriptionListAPIView(APIView):
 
 # ── Client ────────────────────────────────────────────────────────────────────
 
-class ClientPurchaseAPIView(APIView):
+class ClientCreateStripeSessionAPIView(APIView):
     """
-    POST /api/subscriptions/client/purchase/
+    POST /api/subscriptions/client/create-stripe-session/
 
     Body: { plan_id, billing_cycle, auto_renew }
 
-    Creates a ClientSubscription with payment_status=PENDING.
-    FREE plans are activated immediately.
-    Paid plans require a subsequent call to /client/<id>/confirm/ to
-    simulate (or in future, receive) Razorpay confirmation.
-
+    Creates a Stripe Checkout Session for the selected plan.
     Permissions: IsClient
     """
     permission_classes = [IsAuthenticated, IsClient]
@@ -203,18 +202,47 @@ class ClientPurchaseAPIView(APIView):
                 billing_cycle = serializer.validated_data["billing_cycle"],
                 auto_renew    = serializer.validated_data["auto_renew"],
             )
-            return Response(
-                {
-                    "success": True,
-                    "message": (
-                        "Subscribed successfully!"
-                        if subscription.payment_status == ClientSubscription.PaymentStatus.ACTIVE
-                        else "Subscription created. Complete payment to activate."
-                    ),
-                    "data": ClientSubscriptionSerializer(subscription).data,
-                },
-                status=status.HTTP_201_CREATED,
+
+            # If FREE plan, it's already active
+            if subscription.payment_status == ClientSubscription.PaymentStatus.ACTIVE:
+                return Response(
+                    {"success": True, "message": "Subscribed successfully!", "url": None},
+                    status=status.HTTP_201_CREATED,
+                )
+
+            # Otherwise, create Stripe session
+            stripe.api_key = settings.STRIPE_SECRET_KEY
+            checkout_session = stripe.checkout.Session.create(
+                payment_method_types=['card'],
+                line_items=[
+                    {
+                        'price_data': {
+                            'currency': 'usd',
+                            'unit_amount': int(subscription.amount_paid * 100),
+                            'product_data': {
+                                'name': f"FitNexa {subscription.plan.name} Plan",
+                            },
+                        },
+                        'quantity': 1,
+                    },
+                ],
+                mode='payment',
+                success_url=f"http://localhost:5173/client/checkout/success?session_id={{CHECKOUT_SESSION_ID}}&sub_id={subscription.id}",
+                cancel_url="http://localhost:5173/client/checkout/cancel",
+                client_reference_id=str(subscription.id),
+                metadata={
+                    'subscription_id': subscription.id,
+                }
             )
+            
+            subscription.stripe_session_id = checkout_session.id
+            subscription.save(update_fields=['stripe_session_id', 'updated_at'])
+
+            return Response(
+                {"success": True, "url": checkout_session.url},
+                status=status.HTTP_200_OK,
+            )
+
         except Exception as e:
             from rest_framework.exceptions import ValidationError
             if isinstance(e, ValidationError):
@@ -223,7 +251,7 @@ class ClientPurchaseAPIView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             return Response(
-                {"success": False, "message": "Something went wrong."},
+                {"success": False, "message": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -312,3 +340,36 @@ class ClientSubscriptionHistoryAPIView(APIView):
             {"success": True, "message": "Subscription history retrieved.", "data": data},
             status=status.HTTP_200_OK,
         )
+
+
+class StripeWebhookAPIView(APIView):
+    """
+    POST /api/subscriptions/stripe-webhook/
+    Stripe hits this endpoint when a payment succeeds.
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        payload = request.body
+        sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
+        event = None
+
+        stripe.api_key = settings.STRIPE_SECRET_KEY
+        webhook_secret = settings.STRIPE_WEBHOOK_SECRET
+
+        try:
+            event = stripe.Webhook.construct_event(
+                payload, sig_header, webhook_secret
+            )
+        except ValueError as e:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        except stripe.error.SignatureVerificationError as e:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        if event['type'] == 'checkout.session.completed':
+            session = event['data']['object']
+            sub_id = session.get('metadata', {}).get('subscription_id')
+            if sub_id:
+                services.handle_successful_payment(sub_id)
+
+        return Response(status=status.HTTP_200_OK)

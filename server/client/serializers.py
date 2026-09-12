@@ -23,6 +23,8 @@ class ClientProfileCreateSerializer(serializers.Serializer):
 
     profile_image = serializers.ImageField(required=False, allow_null=True)
 
+    is_profile_completed = serializers.BooleanField(required=False, default=False)
+
     # ── Basic ─────────────────────────────────────────────────────────────────
 
     date_of_birth = serializers.DateField(required=False, allow_null=True)
@@ -145,6 +147,10 @@ class ClientProfileUpdateSerializer(serializers.Serializer):
     phone = serializers.CharField(max_length=15, required=False, allow_blank=True)
 
     profile_image = serializers.ImageField(required=False, allow_null=True)
+    
+    remove_profile_image = serializers.BooleanField(required=False, default=False)
+
+    is_profile_completed = serializers.BooleanField(required=False)
 
     # ── Basic ─────────────────────────────────────────────────────────────────
 

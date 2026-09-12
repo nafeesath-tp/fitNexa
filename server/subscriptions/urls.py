@@ -5,10 +5,11 @@ from .views import (
     AdminPlanListCreateAPIView,
     AdminPlanDetailAPIView,
     AdminSubscriptionListAPIView,
-    ClientPurchaseAPIView,
+    ClientCreateStripeSessionAPIView,
     ClientConfirmPaymentAPIView,
     ClientCurrentSubscriptionAPIView,
     ClientSubscriptionHistoryAPIView,
+    StripeWebhookAPIView,
 )
 
 urlpatterns = [
@@ -29,9 +30,13 @@ urlpatterns = [
     # GET  /api/subscriptions/admin/subscriptions/
     path("admin/subscriptions/", AdminSubscriptionListAPIView.as_view(), name="admin-subscription-list"),
 
-    # ── Client ───────────────────────────────────────────────────────────────
-    # POST /api/subscriptions/client/purchase/
-    path("client/purchase/", ClientPurchaseAPIView.as_view(), name="client-purchase"),
+    # ── Client: Subscription Management ───────────────────────────────────────
+
+    # POST /api/subscriptions/client/create-stripe-session/
+    path("client/create-stripe-session/", ClientCreateStripeSessionAPIView.as_view(), name="client-purchase"),
+
+    # POST /api/subscriptions/stripe-webhook/
+    path("stripe-webhook/", StripeWebhookAPIView.as_view(), name="stripe-webhook"),
 
     # POST /api/subscriptions/client/<subscription_id>/confirm/
     path("client/<int:subscription_id>/confirm/", ClientConfirmPaymentAPIView.as_view(), name="client-confirm"),

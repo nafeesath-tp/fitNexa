@@ -5,6 +5,7 @@ import { PlayCircle, Activity } from 'lucide-react';
 import { Container } from '../../components/ui/LayoutComponents';
 import { Card, CardContent } from '../../components/ui/Card';
 import Navbar from '../../components/layout/Navbar';
+import Footer from '../../components/layout/Footer';
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -160,16 +161,7 @@ const Landing = () => {
         </Container>
       </section>
 
-      {/* Footer minimal */}
-      <footer className="py-12 border-t border-border/10 mt-auto bg-background">
-        <Container className="flex justify-between items-center flex-col sm:flex-row gap-4 text-sm text-muted">
-          <div>© 2026 FitNexa Inc.</div>
-          <div className="flex gap-6">
-            <a href="#" className="hover:text-white transition-colors">Privacy</a>
-            <a href="#" className="hover:text-white transition-colors">Terms</a>
-          </div>
-        </Container>
-      </footer>
+      <Footer />
     </div>
   );
 };

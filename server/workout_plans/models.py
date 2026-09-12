@@ -32,7 +32,7 @@ class WorkoutPlan(models.Model):
         blank=True,
         related_name="workout_plans",
     )
-    is_active  = models.BooleanField(default=True)
+    is_active      = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -151,3 +151,29 @@ class WorkoutCompletion(models.Model):
 
     def __str__(self):
         return f"{self.assignment.plan.title} – Day {self.day.day_number} completed"
+
+
+class WorkoutGroupAssignment(models.Model):
+    """
+    Links a WorkoutPlan to a TrainerGroup.
+    All members of the group share this workout plan.
+    Only one plan per group can be active at a time.
+    """
+    plan       = models.ForeignKey(
+        WorkoutPlan,
+        on_delete=models.CASCADE,
+        related_name="group_assignments",
+    )
+    group      = models.ForeignKey(
+        "client_management.TrainerGroup",
+        on_delete=models.CASCADE,
+        related_name="workout_assignments",
+    )
+    assigned_at = models.DateTimeField(auto_now_add=True)
+    is_active   = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["-assigned_at"]
+
+    def __str__(self):
+        return f"{self.plan.title} → Group: {self.group.name}"

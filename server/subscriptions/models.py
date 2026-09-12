@@ -15,7 +15,6 @@ class SubscriptionPlan(models.Model):
     """
 
     class PlanName(models.TextChoices):
-        FREE    = "FREE",    "Free"
         GROUP   = "GROUP",   "Group"
         PREMIUM = "PREMIUM", "Premium"
 
@@ -121,6 +120,13 @@ class ClientSubscription(models.Model):
         decimal_places=2,
         default=0,
         help_text="Actual amount collected at checkout (post-discount, etc.)",
+    )
+
+    stripe_session_id = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        help_text="The Stripe Checkout session ID used to track payment.",
     )
 
     # These are set when payment is confirmed (status → ACTIVE)

@@ -179,3 +179,29 @@ class DietProgress(models.Model):
 
     def __str__(self):
         return f"{self.assignment.trainer_assignment.client.email} completed {self.meal}"
+
+
+class DietGroupAssignment(models.Model):
+    """
+    Links a DietPlan to a TrainerGroup.
+    All members of the group share this diet plan.
+    Only one active diet plan per group at a time.
+    """
+    plan        = models.ForeignKey(
+        DietPlan,
+        on_delete=models.CASCADE,
+        related_name="group_assignments",
+    )
+    group       = models.ForeignKey(
+        "client_management.TrainerGroup",
+        on_delete=models.CASCADE,
+        related_name="diet_assignments",
+    )
+    assigned_at = models.DateTimeField(auto_now_add=True)
+    is_active   = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["-assigned_at"]
+
+    def __str__(self):
+        return f"{self.plan.title} → Group: {self.group.name}"

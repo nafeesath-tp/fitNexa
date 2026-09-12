@@ -30,7 +30,6 @@ const EMPTY_FORM = {
   thumbnail_url: "",
   specialization: "",
   difficulty: "BEGINNER",
-  access_level: "FREE",
   duration_minutes: 15,
   estimated_calories: 100,
   is_featured: false,
@@ -52,11 +51,9 @@ export default function AdminContent() {
   const [search, setSearch] = useState("");
   const [filterSpec, setFilterSpec] = useState("all");
   const [filterDiff, setFilterDiff] = useState("ALL");
-  const [filterTier, setFilterTier] = useState("ALL");
-
   useEffect(() => {
     fetchInitialData();
-  }, [filterSpec, filterDiff, filterTier]);
+  }, [filterSpec, filterDiff]);
 
   const fetchInitialData = async () => {
     setLoading(true);
@@ -65,7 +62,6 @@ export default function AdminContent() {
         contentApi.getAdminVideos({
           specialization: filterSpec,
           difficulty: filterDiff,
-          access_level: filterTier,
           search,
         }),
         api.get("/api/public/specializations/").catch(() => ({ data: { data: [] } })),
@@ -105,7 +101,6 @@ export default function AdminContent() {
       thumbnail_url: v.thumbnail_url || "",
       specialization: v.specialization || "",
       difficulty: v.difficulty,
-      access_level: v.access_level,
       duration_minutes: v.duration_minutes || 15,
       estimated_calories: v.estimated_calories || 0,
       is_featured: v.is_featured,
@@ -141,7 +136,6 @@ export default function AdminContent() {
       payload.append("description", form.description);
       payload.append("video_type", form.video_type);
       payload.append("difficulty", form.difficulty);
-      payload.append("access_level", form.access_level);
       payload.append("duration_minutes", Number(form.duration_minutes) || 10);
       payload.append("is_featured", form.is_featured);
       payload.append("is_published", form.is_published);
@@ -206,12 +200,6 @@ export default function AdminContent() {
     }
   };
 
-  const tierBadge = {
-    FREE: "bg-gray-500/15 text-gray-300 border-gray-500/30",
-    GROUP: "bg-blue-500/15 text-blue-400 border-blue-500/30",
-    PREMIUM: "bg-yellow-500/15 text-yellow-400 border-yellow-500/30",
-  };
-
   const diffBadge = {
     BEGINNER: "text-green-400",
     INTERMEDIATE: "text-blue-400",
@@ -239,7 +227,7 @@ export default function AdminContent() {
             Fitness Content Library
           </h1>
           <p className="text-[#a0b0a8] text-sm mt-1">
-            Manage 3D categorized workouts: Specialization × Difficulty × Access Tier
+            Manage categorized workouts: Specialization × Difficulty
           </p>
         </div>
         <button
@@ -287,18 +275,6 @@ export default function AdminContent() {
             <option value="BEGINNER">Beginner</option>
             <option value="INTERMEDIATE">Intermediate</option>
             <option value="ADVANCED">Advanced</option>
-          </select>
-
-          {/* Tier Filter */}
-          <select
-            value={filterTier}
-            onChange={(e) => setFilterTier(e.target.value)}
-            className="bg-[#0c241c] border border-[#1a3a2e] text-[#c0cfc8] text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-[#10b981]"
-          >
-            <option value="ALL">All Tiers</option>
-            <option value="FREE">Free</option>
-            <option value="GROUP">Group</option>
-            <option value="PREMIUM">Premium</option>
           </select>
         </div>
       </div>
@@ -372,11 +348,8 @@ export default function AdminContent() {
               {/* Content Body */}
               <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
                 <div>
-                  {/* 3D Tags */}
+                  {/* Tags */}
                   <div className="flex flex-wrap items-center gap-2 mb-2.5">
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${tierBadge[v.access_level] || tierBadge.FREE}`}>
-                      {v.access_level || 'FREE'}
-                    </span>
                     <span className="text-xs text-[#a0b0a8] bg-[#0c241c] px-2 py-0.5 rounded-md border border-[#1a3a2e]">
                       {v.specialization_name || 'General'}
                     </span>
@@ -502,14 +475,14 @@ export default function AdminContent() {
                       />
                       <div className="flex items-center gap-2">
                         <div className="h-px bg-[#1a3a2e] flex-1"></div>
-                        <span className="text-[10px] text-[#5b7367] uppercase font-bold">OR PASTE URL</span>
+                        <span className="text-[10px] text-[#5b7367] uppercase font-bold text-center">OR PASTE EXTERNAL MP4 URL</span>
                         <div className="h-px bg-[#1a3a2e] flex-1"></div>
                       </div>
                       <input
                         type="url"
                         value={form.video_url}
                         onChange={(e) => setForm({ ...form, video_url: e.target.value, video_file: null })}
-                        placeholder="https://res.cloudinary.com/.../video.mp4"
+                        placeholder="https://example.com/video.mp4"
                         className="w-full bg-[#0c241c] border border-[#1a3a2e] rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-[#10b981]"
                       />
                     </div>
@@ -525,7 +498,7 @@ export default function AdminContent() {
                     className="w-full bg-[#0c241c] border border-[#1a3a2e] rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#10b981]"
                   >
                     <option value="YOUTUBE">YouTube</option>
-                    <option value="CLOUDINARY">Cloudinary / MP4</option>
+                    <option value="CLOUDINARY">MP4 Video</option>
                   </select>
                 </div>
               </div>
@@ -544,8 +517,8 @@ export default function AdminContent() {
                 />
               </div>
 
-              {/* 3D Categorization Row */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 bg-[#0c241c] rounded-xl border border-[#1a3a2e]">
+              {/* Categorization Row */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-[#0c241c] rounded-xl border border-[#1a3a2e]">
                 {/* Specialization */}
                 <div>
                   <label className="block text-xs font-semibold text-[#88a599] uppercase tracking-wider mb-1.5">
@@ -576,22 +549,6 @@ export default function AdminContent() {
                     <option value="BEGINNER">Beginner</option>
                     <option value="INTERMEDIATE">Intermediate</option>
                     <option value="ADVANCED">Advanced</option>
-                  </select>
-                </div>
-
-                {/* Subscription Tier */}
-                <div>
-                  <label className="block text-xs font-semibold text-[#88a599] uppercase tracking-wider mb-1.5">
-                    3. Access Tier
-                  </label>
-                  <select
-                    value={form.access_level}
-                    onChange={(e) => setForm({ ...form, access_level: e.target.value })}
-                    className="w-full bg-[#112a21] border border-[#1a3a2e] rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-[#10b981]"
-                  >
-                    <option value="FREE">Free</option>
-                    <option value="GROUP">Group</option>
-                    <option value="PREMIUM">Premium</option>
                   </select>
                 </div>
               </div>

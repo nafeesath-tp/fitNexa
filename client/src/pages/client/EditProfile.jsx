@@ -8,6 +8,7 @@ import ProfileForm from '../../components/forms/ProfileForm';
 import PageLoader from '../../components/ui/PageLoader';
 import { Container } from '../../components/ui/LayoutComponents';
 import Button from '../../components/ui/Button';
+import { useSubscriptionStore } from '../../stores/subscriptionStore';
 
 // Helper for displaying readonly fields elegantly
 const ReadOnlyField = ({ label, value, icon: Icon }) => (
@@ -22,6 +23,7 @@ const ReadOnlyField = ({ label, value, icon: Icon }) => (
 
 const EditProfile = () => {
   const { profile, setProfile } = useClientStore();
+  const { currentSubscription } = useSubscriptionStore();
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [initialData, setInitialData] = useState(null);
@@ -114,9 +116,21 @@ const EditProfile = () => {
               <h1 className="text-2xl font-bold text-white md:text-3xl">
                 {profile?.first_name} {profile?.last_name}
               </h1>
-              <div className="mt-1 flex items-center text-sm text-muted">
-                <Mail className="mr-1.5 h-4 w-4" />
-                {profile?.email}
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                <div className="flex items-center text-sm text-muted">
+                  <Mail className="mr-1.5 h-4 w-4" />
+                  {profile?.email}
+                </div>
+                {currentSubscription && (
+                  <div className="inline-flex items-center space-x-2 bg-blue-500/10 text-blue-400 text-xs font-bold px-3 py-1 rounded-lg border border-blue-500/20 uppercase">
+                    <span>PLAN: {currentSubscription.plan?.name || 'FREE'}</span>
+                    {currentSubscription.expires_at && currentSubscription.plan?.name !== 'FREE' && (
+                      <span className="opacity-80 ml-2 border-l border-blue-500/30 pl-2 normal-case">
+                        Expires: {new Date(currentSubscription.expires_at).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>

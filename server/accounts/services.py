@@ -162,8 +162,16 @@ def login_user(validated_data):
     elif user.role == "CLIENT":
         try:
             response_data["is_profile_completed"] = user.client_profile.is_profile_completed
+            response_data["first_name"] = user.client_profile.first_name
         except Exception:
             response_data["is_profile_completed"] = False
+            
+        try:
+            from subscriptions.models import ClientSubscription
+            active = ClientSubscription.objects.filter(client=user, payment_status="ACTIVE").order_by("-created_at").first()
+            response_data["subscription_plan_name"] = active.plan.name if active else "FREE"
+        except Exception:
+            response_data["subscription_plan_name"] = "FREE"
 
     return {
         "user": user,

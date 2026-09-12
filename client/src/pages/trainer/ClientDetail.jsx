@@ -108,24 +108,6 @@ const ClientDetail = () => {
             </div>
           </div>
         </div>
-
-        {/* Quick Action Buttons */}
-        <div className="flex items-center gap-3 w-full md:w-auto">
-          <Button
-            variant="secondary"
-            className="flex-1 md:flex-initial flex items-center justify-center gap-2 border border-emerald-500/30 hover:border-emerald-500"
-            onClick={() => setActiveTab("workouts")}
-          >
-            <Dumbbell className="w-4 h-4 text-emerald-400" /> Workout Plans
-          </Button>
-          <Button
-            variant="secondary"
-            className="flex-1 md:flex-initial flex items-center justify-center gap-2 border border-emerald-500/30 hover:border-emerald-500"
-            onClick={() => setActiveTab("diets")}
-          >
-            <Utensils className="w-4 h-4 text-emerald-400" /> Diet Plans
-          </Button>
-        </div>
       </div>
 
       {/* Tabs Navigation */}
@@ -278,15 +260,31 @@ const ClientDetail = () => {
           <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto text-emerald-400 border border-emerald-500/20">
             <Dumbbell className="w-8 h-8" />
           </div>
-          <h3 className="text-xl font-bold text-white">Workout Plan Management (Module 8)</h3>
-          <p className="text-sm text-gray-400 max-w-lg mx-auto">
-            You can create, customize, and assign multi-week workout programs with exercises, sets, reps, and video tutorials directly to <strong>{name}</strong>.
-          </p>
-          <div className="pt-2 flex justify-center">
-            <Button variant="primary" onClick={() => navigate("/trainer/workout-plans")} className="flex items-center gap-2">
-              <Dumbbell className="w-4 h-4" /> Go to Workout Plan Builder →
-            </Button>
-          </div>
+          {client?.has_workout_plan ? (
+            <>
+              <h3 className="text-xl font-bold text-emerald-400">Workout Plan Assigned ✓</h3>
+              <p className="text-sm text-gray-300 max-w-lg mx-auto">
+                You have successfully assigned a workout plan to <strong>{name}</strong>. They can now access and track it from their client dashboard.
+              </p>
+              <div className="pt-2 flex justify-center">
+                <Button variant="secondary" onClick={() => navigate("/trainer/workout-plans")} className="flex items-center gap-2">
+                  <Dumbbell className="w-4 h-4" /> Manage Workout Plans
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <h3 className="text-xl font-bold text-white">Workout Plan Management</h3>
+              <p className="text-sm text-gray-400 max-w-lg mx-auto">
+                You can create, customize, and assign multi-week workout programs with exercises, sets, reps, and video tutorials directly to <strong>{name}</strong>.
+              </p>
+              <div className="pt-2 flex justify-center">
+                <Button variant="primary" onClick={() => navigate("/trainer/workout-plans")} className="flex items-center gap-2">
+                  <Dumbbell className="w-4 h-4" /> Go to Workout Plan Builder →
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -296,15 +294,31 @@ const ClientDetail = () => {
           <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto text-emerald-400 border border-emerald-500/20">
             <Utensils className="w-8 h-8" />
           </div>
-          <h3 className="text-xl font-bold text-white">Diet & Nutrition Planning (Module 9)</h3>
-          <p className="text-sm text-gray-400 max-w-lg mx-auto">
-            You can create, customize, and assign multi-week calorie and macronutrient targeted diet programs with meal schedules directly to <strong>{name}</strong>.
-          </p>
-          <div className="pt-2 flex justify-center">
-            <Button variant="primary" onClick={() => navigate("/trainer/diet-plans")} className="flex items-center gap-2">
-              <Utensils className="w-4 h-4" /> Go to Diet Plan Builder →
-            </Button>
-          </div>
+          {client?.has_diet_plan ? (
+            <>
+              <h3 className="text-xl font-bold text-emerald-400">Diet Plan Assigned ✓</h3>
+              <p className="text-sm text-gray-300 max-w-lg mx-auto">
+                You have successfully assigned a diet & nutrition plan to <strong>{name}</strong>. They can now access and track it from their client dashboard.
+              </p>
+              <div className="pt-2 flex justify-center">
+                <Button variant="secondary" onClick={() => navigate("/trainer/diet-plans")} className="flex items-center gap-2">
+                  <Utensils className="w-4 h-4" /> Manage Diet Plans
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <h3 className="text-xl font-bold text-white">Diet & Nutrition Planning</h3>
+              <p className="text-sm text-gray-400 max-w-lg mx-auto">
+                You can create, customize, and assign multi-week calorie and macronutrient targeted diet programs with meal schedules directly to <strong>{name}</strong>.
+              </p>
+              <div className="pt-2 flex justify-center">
+                <Button variant="primary" onClick={() => navigate("/trainer/diet-plans")} className="flex items-center gap-2">
+                  <Utensils className="w-4 h-4" /> Go to Diet Plan Builder →
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

@@ -34,6 +34,7 @@ GOOGLE_OAUTH_CLIENT_ID = config("GOOGLE_OAUTH_CLIENT_ID", default="")
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -56,6 +57,12 @@ INSTALLED_APPS = [
     'client_management',
     'workout_plans',
     'diet_plans',
+    'ai_plans',
+    'scheduling',
+    'group_workouts',
+    'video_sessions',
+    'channels',
+    'chat',
 ]
 
 MIDDLEWARE = [
@@ -88,7 +95,14 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'fitNexa.wsgi.application'
+ASGI_APPLICATION  = 'fitNexa.asgi.application'
 
+# Django Channels — InMemoryChannelLayer for development (no Redis required)
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
+}
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
@@ -215,3 +229,18 @@ EMAIL_HOST_USER = config("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
 EMAIL_USE_TLS = config("EMAIL_USE_TLS", cast=bool)
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL")
+# Stripe Configuration
+STRIPE_PUBLIC_KEY = config('STRIPE_PUBLIC_KEY', default='')
+STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY', default='')
+STRIPE_WEBHOOK_SECRET = config('STRIPE_WEBHOOK_SECRET', default='')
+
+# Group Workouts Configurations
+GROUP_WORKOUT_CAPACITY = 20
+
+# LiveKit Video Settings
+LIVEKIT_API_KEY = config("LIVEKIT_API_KEY", default="")
+LIVEKIT_API_SECRET = config("LIVEKIT_API_SECRET", default="")
+LIVEKIT_URL = config("LIVEKIT_URL", default="")
+
+# Google Gemini AI Configuration
+GEMINI_API_KEY = config('GEMINI_API_KEY', default='')

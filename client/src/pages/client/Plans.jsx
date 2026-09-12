@@ -3,17 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { subscriptionApi } from '../../services/subscriptionApi';
 import { useSubscriptionStore } from '../../stores/subscriptionStore';
 import toast from 'react-hot-toast';
-import { Check, Crown, Users, Star, Zap, Loader2 } from 'lucide-react';
+import { Check, Crown, Users, Zap, Loader2 } from 'lucide-react';
 
 const PLAN_META = {
-  FREE: {
-    icon: Star,
-    gradient: 'from-gray-700/40 to-gray-800/40',
-    border: 'border-gray-600/30',
-    highlight: 'text-gray-300',
-    badge: null,
-    buttonStyle: 'bg-gray-600 hover:bg-gray-500 text-white',
-  },
   GROUP: {
     icon: Users,
     gradient: 'from-blue-900/40 to-blue-950/40',
@@ -53,7 +45,7 @@ export default function ClientPlans() {
         subscriptionApi.getCurrent().catch(() => ({ success: false })),
       ]);
       if (plansRes.success) setPlans(plansRes.data);
-      if (currentRes.success) setCurrentSubscription(currentRes.data);
+      setCurrentSubscription(currentRes.success ? currentRes.data : null);
     } catch {
       toast.error('Failed to load plans.');
     } finally {
@@ -76,38 +68,38 @@ export default function ClientPlans() {
         return;
       }
 
-      const sub = purchaseRes.data;
-
-      // Step 2: If already ACTIVE (FREE plan), done
-      if (sub.payment_status === 'ACTIVE') {
-        toast.success('Subscribed to Free plan!');
-        setCurrentSubscription(sub);
-        upsertHistoryItem(sub);
-        navigate('/client/dashboard');
-        return;
-      }
-
-      // Step 3: Simulate payment confirmation (for paid plans)
-      // In production: open Razorpay modal here, then call confirm
-      const confirmRes = await subscriptionApi.confirmPayment(sub.id);
-      if (confirmRes.success) {
-        toast.success('Payment confirmed! Your subscription is now active 🎉');
-        setCurrentSubscription(confirmRes.data);
-        upsertHistoryItem(confirmRes.data);
-        navigate('/client/dashboard');
+      // Step 2: Redirect to Stripe Checkout
+      if (purchaseRes.url) {
+        window.location.href = purchaseRes.url;
       } else {
-        toast.error(confirmRes.message || 'Payment confirmation failed.');
+        toast.error('Failed to initiate payment.');
       }
     } catch (err) {
-      const msg = err.response?.data?.errors?.detail || 'Something went wrong.';
+      const msg = err.response?.data?.message || err.response?.data?.errors?.detail || String(err);
       toast.error(msg);
     } finally {
       setPurchasing(null);
     }
   };
 
-  const isCurrentPlan = (plan) => currentSubscription?.plan?.id === plan.id &&
+  const isCurrentPlan = (plan) =>
+    currentSubscription?.plan?.id === plan.id &&
     currentSubscription?.payment_status === 'ACTIVE';
+
+  // Plan rank: GROUP=1, PREMIUM=2. Upgrade button shows only if the card's rank > current plan's rank.
+  const PLAN_RANK = { GROUP: 1, PREMIUM: 2 };
+  const isUpgradeable = (plan) => {
+    if (!currentSubscription || currentSubscription.payment_status !== 'ACTIVE') return false;
+    const currentRank = PLAN_RANK[currentSubscription.plan?.name] ?? 0;
+    const cardRank = PLAN_RANK[plan.name] ?? 0;
+    return cardRank > currentRank;
+  };
+
+  const getButtonLabel = (plan, price, isCurrent) => {
+    if (isCurrent) return 'Current Plan';
+    if (isUpgradeable(plan)) return 'Upgrade';
+    return `Subscribe — $${Number(price).toLocaleString()}`;
+  };
 
   if (loading) {
     return (
@@ -142,12 +134,7 @@ export default function ClientPlans() {
             Current plan: <strong>{currentSubscription.plan?.name}</strong>
             &nbsp;·&nbsp;expires {new Date(currentSubscription.expires_at).toLocaleDateString()}
             &nbsp;·&nbsp;
-            <button
-              onClick={() => navigate('/client/subscription')}
-              className="underline underline-offset-2"
-            >
-              Manage
-            </button>
+
           </div>
         )}
       </div>
@@ -157,21 +144,19 @@ export default function ClientPlans() {
         <div className="flex items-center bg-surface rounded-full p-1 border border-border/20">
           <button
             onClick={() => setBilling('MONTHLY')}
-            className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
-              billing === 'MONTHLY'
+            className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${billing === 'MONTHLY'
                 ? 'bg-primary text-black'
                 : 'text-muted hover:text-gray-200'
-            }`}
+              }`}
           >
             Monthly
           </button>
           <button
             onClick={() => setBilling('YEARLY')}
-            className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
-              billing === 'YEARLY'
+            className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${billing === 'YEARLY'
                 ? 'bg-primary text-black'
                 : 'text-muted hover:text-gray-200'
-            }`}
+              }`}
           >
             Yearly
             <span className="ml-1.5 text-xs bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded-full">
@@ -184,8 +169,8 @@ export default function ClientPlans() {
       {/* Plan Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start max-w-4xl mx-auto">
         {plans.filter(p => p.name !== 'FREE').map((plan) => {
-          const meta  = PLAN_META[plan.name] || PLAN_META.FREE;
-          const Icon  = meta.icon;
+          const meta = PLAN_META[plan.name] || PLAN_META.FREE;
+          const Icon = meta.icon;
           const price = billing === 'YEARLY' ? plan.price_yearly : plan.price_monthly;
           const perMonth = billing === 'YEARLY' && plan.price_yearly
             ? (plan.price_yearly / 12).toFixed(0)
@@ -196,11 +181,10 @@ export default function ClientPlans() {
           return (
             <div
               key={plan.id}
-              className={`relative rounded-2xl border bg-gradient-to-b ${meta.gradient} ${meta.border} p-6 flex flex-col gap-5 transition-all duration-200 ${
-                plan.name === 'PREMIUM'
+              className={`relative rounded-2xl border bg-gradient-to-b ${meta.gradient} ${meta.border} p-6 flex flex-col gap-5 transition-all duration-200 ${plan.name === 'PREMIUM'
                   ? 'shadow-xl shadow-yellow-500/10 ring-1 ring-yellow-500/20 scale-105'
                   : ''
-              }`}
+                }`}
             >
               {/* Badge */}
               {meta.badge && (
@@ -236,7 +220,7 @@ export default function ClientPlans() {
                   ) : (
                     <>
                       <span className="text-3xl font-bold text-gray-100">
-                        ₹{Number(price).toLocaleString()}
+                        ${Number(price).toLocaleString()}
                       </span>
                       <span className="text-muted text-sm">
                         /{billing === 'YEARLY' ? 'year' : 'month'}
@@ -246,7 +230,7 @@ export default function ClientPlans() {
                 </div>
                 {perMonth && (
                   <p className="text-xs text-muted mt-0.5">
-                    ₹{Number(perMonth).toLocaleString()}/month billed yearly
+                    ${Number(perMonth).toLocaleString()}/month billed yearly
                     {savings && (
                       <span className="ml-1 text-green-400">· Save {savings}%</span>
                     )}
@@ -268,20 +252,13 @@ export default function ClientPlans() {
               <button
                 onClick={() => !isCurrent && handlePurchase(plan)}
                 disabled={isCurrent || purchasing === plan.id}
-                className={`w-full py-3 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
-                  isCurrent
+                className={`w-full py-3 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${isCurrent
                     ? 'bg-primary/10 text-primary border border-primary/20 cursor-default'
                     : meta.buttonStyle
-                } disabled:opacity-60`}
+                  } disabled:opacity-60`}
               >
                 {purchasing === plan.id && <Loader2 className="w-4 h-4 animate-spin" />}
-                {isCurrent
-                  ? 'Current Plan'
-                  : currentSubscription
-                  ? 'Upgrade'
-                  : Number(price) === 0
-                  ? 'Get Started Free'
-                  : `Subscribe — ₹${Number(price).toLocaleString()}`}
+                {getButtonLabel(plan, price, isCurrent)}
               </button>
             </div>
           );
@@ -291,7 +268,7 @@ export default function ClientPlans() {
       {/* Subscription history link */}
       <div className="mt-10 text-center">
         <button
-          onClick={() => navigate('/client/subscription')}
+          onClick={() => navigate('/client/subscription-history')}
           className="text-muted text-sm hover:text-gray-200 underline underline-offset-2 transition-colors"
         >
           View subscription history →

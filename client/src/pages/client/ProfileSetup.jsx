@@ -17,9 +17,27 @@ const ProfileSetup = () => {
   const [formData, setFormData] = useState({
     preferred_workout: '',
     fitness_goal: '',
-    height_cm: '',
-    weight_kg: '',
+    target_weight_kg: '',
+    diet_preference: 'NONE',
+    medical_condition: '',
+    profile_image: null,
   });
+
+  const [imageError, setImageError] = useState('');
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+        setImageError('Only .jpg, .jpeg, .png, and .webp allowed. PDF not supported.');
+        e.target.value = '';
+        updateForm('profile_image', null);
+      } else {
+        setImageError('');
+        updateForm('profile_image', file);
+      }
+    }
+  };
 
   const updateForm = (key, value) => setFormData(prev => ({ ...prev, [key]: value }));
 
@@ -28,17 +46,18 @@ const ProfileSetup = () => {
       setIsLoading(true);
       const data = new FormData();
       
-      // The backend requires first_name and last_name. 
-      // If the user object doesn't have them, we use defaults.
-      data.append('first_name', user?.first_name || 'Fitness');
-      data.append('last_name', user?.last_name || 'Enthusiast');
-      
       if (formData.preferred_workout) data.append('preferred_workout', formData.preferred_workout);
       if (formData.fitness_goal) data.append('fitness_goal', formData.fitness_goal);
-      if (formData.height_cm) data.append('height_cm', formData.height_cm);
-      if (formData.weight_kg) data.append('weight_kg', formData.weight_kg);
+      if (formData.target_weight_kg) data.append('target_weight_kg', formData.target_weight_kg);
+      if (formData.diet_preference) data.append('diet_preference', formData.diet_preference);
+      if (formData.medical_condition) data.append('medical_condition', formData.medical_condition);
+      if (formData.profile_image) data.append('profile_image', formData.profile_image);
+      
+      // Explicitly pass is_profile_completed: true to finalize setup
+      data.append('is_profile_completed', 'true');
 
-      const response = await clientApi.createProfile(data);
+      // We update the existing basic profile
+      const response = await clientApi.updateProfile(data);
       
       if (response.success) {
         toast.success('Onboarding complete!');
@@ -147,7 +166,7 @@ const ProfileSetup = () => {
               <button
                 onClick={nextStep}
                 disabled={!formData.fitness_goal}
-                className="w-2/3 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-[#0b120f] font-bold py-4 rounded-xl transition-all"
+                className="w-2/3 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed text-[#0b120f] font-bold py-4 rounded-xl transition-all"
               >
                 Next Step
               </button>
@@ -159,32 +178,67 @@ const ProfileSetup = () => {
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="text-center">
               <div className="w-16 h-1 bg-emerald-500 rounded-full mx-auto mb-6"></div>
-              <h1 className="text-3xl font-extrabold text-white mb-2 tracking-tight">Your Health & Daily Habits</h1>
-              <p className="text-gray-400 text-sm">Tell us about your body details to help us customize your diet plan.</p>
+              <h1 className="text-3xl font-extrabold text-white mb-2 tracking-tight">Final touches</h1>
+              <p className="text-gray-400 text-sm">Add a few more details to complete your profile.</p>
             </div>
-            
+
             <div className="space-y-5 mt-8 bg-[#111c17] p-6 rounded-2xl border border-emerald-900/30">
               <div className="flex gap-4">
                 <div className="w-1/2 space-y-2">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Weight (kg)</label>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Target Weight (kg)</label>
                   <input
                     type="number"
-                    value={formData.weight_kg}
-                    onChange={(e) => updateForm('weight_kg', e.target.value)}
+                    min="20"
+                    max="500"
+                    step="0.1"
+                    value={formData.target_weight_kg}
+                    onChange={(e) => updateForm('target_weight_kg', e.target.value)}
                     className="w-full bg-[#0b120f] border border-emerald-900/30 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500"
-                    placeholder="e.g. 75"
+                    placeholder="e.g. 65"
                   />
                 </div>
                 <div className="w-1/2 space-y-2">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Height (cm)</label>
-                  <input
-                    type="number"
-                    value={formData.height_cm}
-                    onChange={(e) => updateForm('height_cm', e.target.value)}
-                    className="w-full bg-[#0b120f] border border-emerald-900/30 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500"
-                    placeholder="e.g. 175"
-                  />
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Dietary Preference</label>
+                  <select
+                    value={formData.diet_preference}
+                    onChange={(e) => updateForm('diet_preference', e.target.value)}
+                    className="w-full bg-[#0b120f] border border-emerald-900/30 rounded-xl px-4 py-3 text-gray-300 focus:outline-none focus:border-emerald-500"
+                  >
+                    <option value="NONE">No Preference</option>
+                    <option value="VEGETARIAN">Vegetarian</option>
+                    <option value="VEGAN">Vegan</option>
+                    <option value="KETO">Keto</option>
+                    <option value="PALEO">Paleo</option>
+                    <option value="GLUTEN_FREE">Gluten-Free</option>
+                    <option value="DAIRY_FREE">Dairy-Free</option>
+                  </select>
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Medical Conditions / Injuries (Optional)</label>
+                <textarea
+                  value={formData.medical_condition}
+                  onChange={(e) => updateForm('medical_condition', e.target.value)}
+                  className="w-full bg-[#0b120f] border border-emerald-900/30 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500"
+                  placeholder="Any conditions or injuries we should know about"
+                  rows="2"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Profile Image (Optional)</label>
+                <input
+                  type="file"
+                  accept="image/jpeg, image/png, image/webp"
+                  onChange={handleImageChange}
+                  className="w-full bg-[#0b120f] border border-emerald-900/30 rounded-xl px-4 py-2 text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-emerald-500/10 file:text-emerald-500 hover:file:bg-emerald-500/20 cursor-pointer"
+                />
+                {imageError ? (
+                  <p className="text-xs text-red-500 mt-1">{imageError}</p>
+                ) : (
+                  <p className="text-xs text-gray-500 mt-1">Only .jpg, .jpeg, .png, and .webp allowed. PDF not supported.</p>
+                )}
               </div>
             </div>
 
@@ -197,7 +251,7 @@ const ProfileSetup = () => {
               </button>
               <button
                 onClick={handleSubmit}
-                disabled={isLoading || !formData.weight_kg || !formData.height_cm}
+                disabled={isLoading}
                 className="w-2/3 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-[#0b120f] font-bold py-4 rounded-xl transition-all flex justify-center items-center"
               >
                 {isLoading ? <span className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#0b120f]"></span> : 'Complete Setup'}

@@ -30,11 +30,10 @@ export default function ClientVideos() {
   const [search, setSearch] = useState("");
   const [filterSpec, setFilterSpec] = useState("all");
   const [filterDiff, setFilterDiff] = useState("ALL");
-  const [filterTier, setFilterTier] = useState("ALL");
 
   useEffect(() => {
     fetchData();
-  }, [filterSpec, filterDiff, filterTier]);
+  }, [filterSpec, filterDiff]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -43,7 +42,6 @@ export default function ClientVideos() {
         contentApi.getClientVideos({
           specialization: filterSpec,
           difficulty: filterDiff,
-          access_level: filterTier,
           search,
         }),
         api.get("/api/public/specializations/").catch(() => ({ data: { data: [] } })),
@@ -64,11 +62,6 @@ export default function ClientVideos() {
   };
 
   const handleCardClick = (v) => {
-    if (v.is_locked) {
-      toast.error(`Please upgrade to ${v.required_plan} plan to watch this workout.`);
-      navigate("/client/plans");
-      return;
-    }
     setActiveVideo(v);
   };
 
@@ -88,12 +81,6 @@ export default function ClientVideos() {
     BEGINNER: "bg-green-500/15 text-green-400 border-green-500/20",
     INTERMEDIATE: "bg-blue-500/15 text-blue-400 border-blue-500/20",
     ADVANCED: "bg-red-500/15 text-red-400 border-red-500/20",
-  };
-
-  const tierColors = {
-    FREE: "bg-gray-500/15 text-gray-300 border-gray-500/30",
-    GROUP: "bg-blue-500/15 text-blue-400 border-blue-500/30",
-    PREMIUM: "bg-gradient-to-r from-yellow-500/20 to-orange-500/20 text-yellow-400 border-yellow-500/30 font-bold",
   };
 
   return (
@@ -179,28 +166,6 @@ export default function ClientVideos() {
               ))}
             </div>
           </div>
-
-          {/* Dimension 3: Access Tier Pills */}
-          <div>
-            <label className="block text-[11px] font-bold text-muted uppercase tracking-wider mb-2.5">
-              3. Subscription Tier
-            </label>
-            <div className="flex items-center gap-2">
-              {["ALL", "FREE", "GROUP", "PREMIUM"].map((tier) => (
-                <button
-                  key={tier}
-                  onClick={() => setFilterTier(tier)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                    filterTier === tier
-                      ? "bg-white text-black font-bold"
-                      : "bg-surface text-muted hover:text-white border border-border/20"
-                  }`}
-                >
-                  {tier === "ALL" ? "All Tiers" : tier}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
 
@@ -220,7 +185,6 @@ export default function ClientVideos() {
             onClick={() => {
               setFilterSpec("all");
               setFilterDiff("ALL");
-              setFilterTier("ALL");
               setSearch("");
             }}
             className="mt-6 px-5 py-2 bg-primary/10 text-primary border border-primary/20 rounded-xl text-xs font-semibold hover:bg-primary/20 transition-colors"
@@ -234,11 +198,7 @@ export default function ClientVideos() {
             <div
               key={v.id}
               onClick={() => handleCardClick(v)}
-              className={`group relative bg-surface border rounded-2xl overflow-hidden flex flex-col transition-all duration-300 cursor-pointer ${
-                v.is_locked
-                  ? "border-border/20 hover:border-yellow-500/40"
-                  : "border-border/20 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5"
-              }`}
+              className="group relative bg-surface border rounded-2xl overflow-hidden flex flex-col transition-all duration-300 cursor-pointer border-border/20 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5"
             >
               {/* Thumbnail Container */}
               <div className="relative aspect-video bg-black/40 overflow-hidden">
@@ -246,9 +206,7 @@ export default function ClientVideos() {
                   <img
                     src={v.thumbnail_url}
                     alt={v.title}
-                    className={`w-full h-full object-cover transition-transform duration-500 ${
-                      v.is_locked ? "filter blur-[1.5px] brightness-75" : "group-hover:scale-105"
-                    }`}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-muted">
@@ -256,17 +214,11 @@ export default function ClientVideos() {
                   </div>
                 )}
 
-                {/* Play or Lock Overlay */}
+                {/* Play Overlay */}
                 <div className="absolute inset-0 flex items-center justify-center">
-                  {v.is_locked ? (
-                    <div className="w-12 h-12 rounded-full bg-black/80 backdrop-blur-md border border-yellow-500/50 flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform">
-                      <Lock className="w-5 h-5 text-yellow-400" />
-                    </div>
-                  ) : (
-                    <div className="w-12 h-12 rounded-full bg-primary/90 text-black flex items-center justify-center shadow-xl opacity-90 group-hover:opacity-100 group-hover:scale-110 transition-all">
-                      <Play className="w-5 h-5 fill-black ml-0.5" />
-                    </div>
-                  )}
+                  <div className="w-12 h-12 rounded-full bg-primary/90 text-black flex items-center justify-center shadow-xl opacity-90 group-hover:opacity-100 group-hover:scale-110 transition-all">
+                    <Play className="w-5 h-5 fill-black ml-0.5" />
+                  </div>
                 </div>
 
                 {/* Duration Badge */}
@@ -289,9 +241,6 @@ export default function ClientVideos() {
                 <div>
                   {/* 3D Categorization Pills */}
                   <div className="flex flex-wrap items-center gap-2 mb-2.5">
-                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${tierColors[v.access_level] || tierColors.FREE}`}>
-                      {v.access_level}
-                    </span>
                     <span className="text-xs text-gray-300 bg-white/5 px-2 py-0.5 rounded-md border border-border/20">
                       {v.specialization_name}
                     </span>
@@ -323,17 +272,10 @@ export default function ClientVideos() {
 
                   {/* Dynamic CTA */}
                   <div>
-                    {v.is_locked ? (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 text-xs font-bold group-hover:bg-yellow-500/20 transition-colors">
-                        <Lock className="w-3.5 h-3.5" />
-                        Upgrade to {v.required_plan.charAt(0) + v.required_plan.slice(1).toLowerCase()}
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-primary/10 text-primary border border-primary/20 text-xs font-bold group-hover:bg-primary group-hover:text-black transition-all">
-                        <Play className="w-3 h-3 fill-current" />
-                        Watch
-                      </span>
-                    )}
+                    <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-primary/10 text-primary border border-primary/20 text-xs font-bold group-hover:bg-primary group-hover:text-black transition-all">
+                      <Play className="w-3 h-3 fill-current" />
+                      Watch
+                    </span>
                   </div>
                 </div>
               </div>

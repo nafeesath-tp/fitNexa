@@ -1,16 +1,29 @@
 """
 ASGI config for fitNexa project.
 
-It exposes the ASGI callable as a module-level variable named ``application``.
-
-For more information on this file, see
-https://docs.djangoproject.com/en/5.1/howto/deployment/asgi/
+Routes HTTP → Django, WebSocket → Django Channels ChatConsumer.
+Run with: daphne fitNexa.asgi:application
 """
-
 import os
-
-from django.core.asgi import get_asgi_application
+import django
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'fitNexa.settings')
+django.setup()
 
-application = get_asgi_application()
+from django.core.asgi import get_asgi_application
+from channels.routing import ProtocolTypeRouter, URLRouter
+from channels.security.websocket import AllowedHostsOriginValidator
+
+from chat.middleware import JWTAuthMiddleware
+from chat.routing import websocket_urlpatterns
+
+django_asgi_app = get_asgi_application()
+
+application = ProtocolTypeRouter({
+    "http": django_asgi_app,
+    "websocket": AllowedHostsOriginValidator(
+        JWTAuthMiddleware(
+            URLRouter(websocket_urlpatterns)
+        )
+    ),
+})

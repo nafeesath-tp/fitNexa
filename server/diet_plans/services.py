@@ -2,13 +2,14 @@ from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 
-from .models import DietPlan, DietWeek, DietDay, DietMeal, DietAssignment, DietProgress
+from .models import DietPlan, DietWeek, DietDay, DietMeal, DietAssignment, DietProgress, DietGroupAssignment
 from .serializers import (
     DietPlanListSerializer, DietPlanDetailSerializer,
     DietPlanWriteSerializer, DietAssignmentListSerializer,
     ClientDietCurrentSerializer, DietProgressSerializer,
 )
-from client_management.models import TrainerAssignment
+from client_management.models import TrainerAssignment, TrainerGroup, TrainerGroupMember
+from subscriptions.models import ClientSubscription
 
 
 # ── Trainer: Plan Template CRUD ───────────────────────────────────────────────
@@ -166,14 +167,63 @@ def get_trainer_assignments(trainer_user):
     return DietAssignmentListSerializer(assignments, many=True).data
 
 
-# ── Client: View & Track Diet ────────────────────────────────────────────────
+# ── Trainer: Assign Diet Plan to a Group ───────────────────────────────────────
+
+def assign_diet_to_group(trainer_user, plan_id, group_id):
+    """
+    Assigns a diet plan to a TrainerGroup.
+    Deactivates any previous active diet assignment for that group.
+    """
+    plan  = get_object_or_404(DietPlan, id=plan_id, trainer=trainer_user, is_active=True)
+    group = get_object_or_404(TrainerGroup, id=group_id, trainer=trainer_user, is_active=True)
+
+    # Deactivate previous diet assignment for this group
+    DietGroupAssignment.objects.filter(group=group, is_active=True).update(is_active=False)
+
+    assignment = DietGroupAssignment.objects.create(plan=plan, group=group, is_active=True)
+    return {"assignment_id": assignment.id, "plan_title": plan.title, "group_name": group.name}
+
+
+# ── Helper: get client's active subscription plan name ────────────────────────
+
+def _get_client_plan_name(client_user):
+    """Returns 'GROUP', 'PREMIUM', or None based on the client's active subscription."""
+    sub = ClientSubscription.objects.filter(
+        client=client_user,
+        payment_status=ClientSubscription.PaymentStatus.ACTIVE,
+    ).select_related("plan").first()
+    return sub.plan.name if sub else None
+
+
+# ── Client: View & Track Diet ──────────────────────────────────────────────────
 
 def get_client_current_diet(client_user):
     """
-    Returns the client's current active diet assignment with full
-    plan structure and meal progress state.
-    Endpoint: GET /api/diets/client/current/
+    Returns the client's current diet plan.
+
+    GROUP clients  → find their TrainerGroup → return group's assigned DietPlan.
+    PREMIUM clients → find their individual DietAssignment via TrainerAssignment.
     """
+    plan_name = _get_client_plan_name(client_user)
+
+    if plan_name == "GROUP":
+        ta = TrainerAssignment.objects.filter(client=client_user, is_active=True).first()
+        if not ta:
+            return None
+        try:
+            membership = ta.group_membership
+        except TrainerGroupMember.DoesNotExist:
+            return None
+        group_assignment = DietGroupAssignment.objects.filter(
+            group=membership.group, is_active=True
+        ).select_related("plan").prefetch_related(
+            "plan__weeks__days__meals",
+        ).order_by("-assigned_at").first()
+        if not group_assignment:
+            return None
+        return DietPlanDetailSerializer(group_assignment.plan).data
+
+    # PREMIUM (or fallback): use individual TrainerAssignment
     ta = TrainerAssignment.objects.filter(client=client_user, is_active=True).first()
     if not ta:
         return None
@@ -219,7 +269,35 @@ def complete_diet_meal(client_user, meal_id, notes=""):
 def get_client_progress(client_user):
     """
     Returns overall progress stats: completed meals, total meals, %, progress_text.
+    GROUP  → reads from the group's assigned DietPlan.
+    PREMIUM → reads from their individual DietAssignment.
     """
+    plan_name = _get_client_plan_name(client_user)
+
+    if plan_name == "GROUP":
+        ta = TrainerAssignment.objects.filter(client=client_user, is_active=True).first()
+        if not ta:
+            return {"progress_pct": 0, "progress_text": "0 / 0", "completed_meals": 0, "total_meals": 0}
+        try:
+            membership = ta.group_membership
+        except TrainerGroupMember.DoesNotExist:
+            return {"progress_pct": 0, "progress_text": "0 / 0", "completed_meals": 0, "total_meals": 0}
+        ga = DietGroupAssignment.objects.filter(
+            group=membership.group, is_active=True
+        ).select_related("plan").first()
+        if not ga:
+            return {"progress_pct": 0, "progress_text": "0 / 0", "completed_meals": 0, "total_meals": 0}
+        total = DietMeal.objects.filter(day__week__plan=ga.plan).count()
+        return {
+            "progress_pct": 0,
+            "progress_text": f"0 / {total}",
+            "completed_meals": 0,
+            "total_meals": total,
+            "plan_title": ga.plan.title,
+            "calories": ga.plan.calories,
+        }
+
+    # PREMIUM path
     ta = TrainerAssignment.objects.filter(client=client_user, is_active=True).first()
     if not ta:
         return {"progress_pct": 0, "progress_text": "0 / 0", "completed_meals": 0, "total_meals": 0}

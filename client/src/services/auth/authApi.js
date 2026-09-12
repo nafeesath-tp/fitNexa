@@ -28,7 +28,12 @@ export const authApi = {
     },
 
     checkAuth: async () => {
-        const response = await api.get('/api/auth/me/');
+        const response = await api.get(`/api/auth/me/?t=${Date.now()}`);
+        return response.data;
+    },
+
+    me: async () => {
+        const response = await api.get(`/api/auth/me/?t=${Date.now()}`);
         return response.data;
     },
 

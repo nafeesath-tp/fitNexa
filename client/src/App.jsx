@@ -16,6 +16,7 @@ import Signup from './pages/auth/Signup';
 import VerifyOTP from './pages/auth/VerifyOTP';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import ClientLayout from './layouts/ClientLayout';
+import BasicProfileSetup from './pages/client/BasicProfileSetup';
 import ProfileSetup from './pages/client/ProfileSetup';
 import Home from './pages/client/Home';
 import EditProfile from './pages/client/EditProfile';
@@ -35,16 +36,32 @@ import AdminContent from './pages/admin/Content';
 import ClientPlans from './pages/client/Plans';
 import ClientVideos from './pages/client/Videos';
 import ClientDashboard from './pages/client/Dashboard';
+import CheckoutSuccess from './pages/client/CheckoutSuccess';
+import CheckoutCancel from './pages/client/CheckoutCancel';
 import AdminClientAssignments from './pages/admin/ClientAssignments';
+import AdminVideoAnalytics from './pages/admin/VideoAnalytics';
 import TrainerMyClients from './pages/trainer/MyClients';
 import TrainerClientDetail from './pages/trainer/ClientDetail';
 import TrainerWorkoutPlans from './pages/trainer/WorkoutPlans';
 import TrainerWorkoutPlanDetail from './pages/trainer/WorkoutPlanDetail';
-import ClientMyWorkout from './pages/client/MyWorkout';
+import ClientBooking from './pages/client/ClientBooking';
+import MyWorkout from './pages/client/MyWorkout';
+import MyDiet from './pages/client/MyDiet';
+import AiPlan from './pages/client/AiPlan';
+import SubscriptionHistory from './pages/client/SubscriptionHistory';
 import TrainerDietPlans from './pages/trainer/DietPlans';
 import TrainerDietPlanDetail from './pages/trainer/DietPlanDetail';
-import ClientMyDiet from './pages/client/MyDiet';
-import AiPlan from './pages/client/AiPlan';
+import TrainerGroups from './pages/trainer/Groups';
+import TrainerGroupDetail from './pages/trainer/GroupDetail';
+import TrainerAiPlansReview from './pages/trainer/AiPlansReview';
+import TrainerAiPlanReviewDetail from './pages/trainer/AiPlanReviewDetail';
+import TrainerSlots from './pages/trainer/TrainerSlots';
+import TrainerSessions from './pages/trainer/TrainerSessions';
+import TrainerGroupWorkouts from './pages/trainer/TrainerGroupWorkouts';
+import ClientGroupWorkouts from './pages/client/ClientGroupWorkouts';
+import VideoSessionRoom from './pages/VideoSessionRoom';
+import Chat from './pages/Chat';
+import AdminChatReports from './pages/admin/AdminChatReports';
 
 // --- Placeholder Pages (To be built later) ---
 const Placeholder = ({ title }) => <div><h2>{title} Page</h2></div>;
@@ -96,13 +113,22 @@ function App() {
         {/* CLIENT ROUTES (Protected) */}
         <Route element={<ProtectedRoute allowedRoles={['CLIENT']} />}>
           <Route path="/client" element={<ClientLayout />}>
+            <Route path="basic-setup"  element={<BasicProfileSetup />} />
             <Route path="setup"        element={<ProfileSetup />} />
             <Route path="home"         element={<Home />} />
             <Route path="dashboard"    element={<ClientDashboard />} />
             <Route path="workout"      element={<AiPlan />} />
-            <Route path="profile"      element={<EditProfile />} />
+            <Route path="my-workout"   element={<MyWorkout />} />
+            <Route path="my-diet"      element={<MyDiet />} />
+            <Route path="booking"      element={<ClientBooking />} />
+            <Route path="group-workouts" element={<ClientGroupWorkouts />} />
+            <Route path="chat"           element={<Chat />} />
+            <Route path="profile"        element={<EditProfile />} />
             <Route path="plans"        element={<ClientPlans />} />
-            <Route path="videos"       element={<ClientVideos />} />
+            <Route path="videos"             element={<ClientVideos />} />
+            <Route path="subscription-history" element={<SubscriptionHistory />} />
+            <Route path="checkout/success"    element={<CheckoutSuccess />} />
+            <Route path="checkout/cancel"     element={<CheckoutCancel />} />
           </Route>
         </Route>
 
@@ -116,10 +142,18 @@ function App() {
             <Route path="profile" element={<TrainerEditProfile />} />
             <Route path="clients" element={<TrainerMyClients />} />
             <Route path="clients/:id" element={<TrainerClientDetail />} />
+            <Route path="groups" element={<TrainerGroups />} />
+            <Route path="groups/:id" element={<TrainerGroupDetail />} />
             <Route path="workout-plans" element={<TrainerWorkoutPlans />} />
             <Route path="workout-plans/:planId" element={<TrainerWorkoutPlanDetail />} />
             <Route path="diet-plans" element={<TrainerDietPlans />} />
             <Route path="diet-plans/:planId" element={<TrainerDietPlanDetail />} />
+            <Route path="ai-plans" element={<TrainerAiPlansReview />} />
+            <Route path="ai-plans/:id" element={<TrainerAiPlanReviewDetail />} />
+            <Route path="slots" element={<TrainerSlots />} />
+            <Route path="sessions" element={<TrainerSessions />} />
+            <Route path="group-workouts" element={<TrainerGroupWorkouts />} />
+            <Route path="chat"           element={<Chat />} />
           </Route>
         </Route>
 
@@ -133,7 +167,14 @@ function App() {
             <Route path="subscriptions" element={<AdminSubscriptions />} />
             <Route path="content" element={<AdminContent />} />
             <Route path="client-assignments" element={<AdminClientAssignments />} />
+            <Route path="video-analytics"    element={<AdminVideoAnalytics />} />
+            <Route path="chat-reports"        element={<AdminChatReports />} />
           </Route>
+        </Route>
+
+        {/* SHARED PROTECTED ROUTES (Clients & Trainers) */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/video-session/:sessionId" element={<VideoSessionRoom />} />
         </Route>
 
         {/* 404 Fallback */}

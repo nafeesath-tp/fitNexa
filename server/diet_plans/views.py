@@ -10,6 +10,7 @@ from .services import (
     add_week, delete_week, add_day, delete_day, add_meal, update_meal, delete_meal,
     assign_plan_to_client, get_trainer_assignments,
     get_client_current_diet, complete_diet_meal, get_client_progress,
+    assign_diet_to_group,
 )
 
 
@@ -145,6 +146,25 @@ class TrainerDietAssignmentListAPIView(APIView):
     def get(self, request):
         data = get_trainer_assignments(request.user)
         return Response({"success": True, "data": data})
+
+
+class TrainerSetGroupDietPlanAPIView(APIView):
+    """
+    PATCH /api/diets/trainer/plans/<plan_id>/set-group/
+
+    Marks this diet plan as the shared GROUP plan.
+    All GROUP-subscribed clients will see this diet plan on their dashboard.
+    Only one plan can be the group plan at a time (previous one is unset).
+
+    Permissions: IsApprovedTrainer
+    """
+    permission_classes = [IsAuthenticated, IsApprovedTrainer]
+
+    def patch(self, request, plan_id):
+        data = set_group_plan(request.user, plan_id)
+        return Response(
+            {"success": True, "message": "Plan set as the shared GROUP diet plan.", "data": data}
+        )
 
 
 # ── Client: View & Track Diet ────────────────────────────────────────────────

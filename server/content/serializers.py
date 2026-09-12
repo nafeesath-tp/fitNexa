@@ -38,38 +38,13 @@ class ClientTrainingVideoSerializer(serializers.ModelSerializer):
     def get_specialization_name(self, obj):
         return obj.specialization.name if obj.specialization else "General"
 
-    def _get_lock_info(self, obj):
-        client_plan = self.context.get("client_plan", "FREE")
-        
-        if client_plan == "PREMIUM":
-            return False, None
-            
-        if client_plan == "GROUP":
-            if obj.access_level in ["FREE", "GROUP"]:
-                return False, None
-            return True, "PREMIUM"
-            
-        # Default to FREE logic
-        if obj.access_level == "FREE":
-            return False, None
-        elif obj.access_level == "GROUP":
-            return True, "GROUP"
-        else:
-            return True, "PREMIUM"
-
     def get_is_locked(self, obj):
-        is_locked, _ = self._get_lock_info(obj)
-        return is_locked
+        return False
 
     def get_required_plan(self, obj):
-        _, required_plan = self._get_lock_info(obj)
-        return required_plan
+        return None
 
     def get_video_url(self, obj):
-        is_locked, _ = self._get_lock_info(obj)
-        if is_locked:
-            return None  # Security: never send stream URL for locked content
-            
         if obj.video_file:
             # For Cloudinary VideoMediaCloudinaryStorage, .url gives the stream link
             return obj.video_file.url

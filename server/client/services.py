@@ -91,14 +91,18 @@ def create_client_profile(user, validated_data):
         # Apply all supplied fields on top of existing data.
         for field, value in validated_data.items():
             setattr(existing, field, value)
-        existing.is_profile_completed = True
+        
+        # If is_profile_completed wasn't provided in the request, keep it as is (or True if we want to fallback, but let's just use what's provided or default to False via serializer)
+        # Actually the serializer adds default=False for create, but for updates on an existing incomplete profile we should respect validated_data.
+        if 'is_profile_completed' not in validated_data:
+            pass # Keep whatever is already in the DB
+            
         existing.save()
         profile = existing
     else:
         # Brand-new profile (email-signup flow)
         profile = ClientProfile.objects.create(
             user=user,
-            is_profile_completed=True,
             **validated_data,
         )
 
@@ -158,6 +162,13 @@ def update_client_profile(user, validated_data):
 
     # Apply only the fields that were supplied in this request
     updated_fields = []
+    
+    # Handle specific image removal flag
+    remove_image = validated_data.pop("remove_profile_image", False)
+    if remove_image:
+        profile.profile_image = None
+        updated_fields.append("profile_image")
+
     for field, value in validated_data.items():
         setattr(profile, field, value)
         updated_fields.append(field)

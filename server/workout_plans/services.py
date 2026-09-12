@@ -2,13 +2,14 @@ from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 
-from .models import WorkoutPlan, WorkoutWeek, WorkoutDay, WorkoutExercise, WorkoutAssignment, WorkoutCompletion
+from .models import WorkoutPlan, WorkoutWeek, WorkoutDay, WorkoutExercise, WorkoutAssignment, WorkoutCompletion, WorkoutGroupAssignment
 from .serializers import (
     WorkoutPlanListSerializer, WorkoutPlanDetailSerializer,
     WorkoutPlanWriteSerializer, WorkoutAssignmentListSerializer,
     ClientWorkoutCurrentSerializer, WorkoutCompletionSerializer,
 )
-from client_management.models import TrainerAssignment
+from client_management.models import TrainerAssignment, TrainerGroup, TrainerGroupMember
+from subscriptions.models import ClientSubscription
 
 
 # ── Trainer: Plan Template CRUD ───────────────────────────────────────────────
@@ -136,14 +137,64 @@ def get_trainer_assignments(trainer_user):
     return WorkoutAssignmentListSerializer(assignments, many=True).data
 
 
+# ── Trainer: Assign Workout Plan to a Group ───────────────────────────────────────
+
+def assign_workout_to_group(trainer_user, plan_id, group_id):
+    """
+    Assigns a workout plan to a TrainerGroup.
+    Deactivates any previous active workout assignment for that group.
+    """
+    plan  = get_object_or_404(WorkoutPlan, id=plan_id, trainer=trainer_user, is_active=True)
+    group = get_object_or_404(TrainerGroup, id=group_id, trainer=trainer_user, is_active=True)
+
+    # Deactivate previous workout assignment for this group
+    WorkoutGroupAssignment.objects.filter(group=group, is_active=True).update(is_active=False)
+
+    assignment = WorkoutGroupAssignment.objects.create(plan=plan, group=group, is_active=True)
+    return {"assignment_id": assignment.id, "plan_title": plan.title, "group_name": group.name}
+
+
+# ── Helper: get client's active subscription plan name ────────────────────────
+
+def _get_client_plan_name(client_user):
+    """Returns 'GROUP', 'PREMIUM', or None based on the client's active subscription."""
+    sub = ClientSubscription.objects.filter(
+        client=client_user,
+        payment_status=ClientSubscription.PaymentStatus.ACTIVE,
+    ).select_related("plan").first()
+    return sub.plan.name if sub else None
+
+
 # ── Client: View & Track Workout ───────────────────────────────────────────────
 
 def get_client_current_workout(client_user):
     """
-    Returns the client's current active workout assignment with full
-    plan structure and daily progress state.
-    Endpoint: GET /api/workouts/client/current/
+    Returns the client's current workout plan.
+
+    GROUP clients  → find their TrainerGroup → return group's assigned WorkoutPlan.
+    PREMIUM clients → find their individual WorkoutAssignment via TrainerAssignment.
     """
+    plan_name = _get_client_plan_name(client_user)
+
+    if plan_name == "GROUP":
+        # Find the client's TrainerAssignment, then their group membership
+        ta = TrainerAssignment.objects.filter(client=client_user, is_active=True).first()
+        if not ta:
+            return None
+        try:
+            membership = ta.group_membership  # TrainerGroupMember
+        except TrainerGroupMember.DoesNotExist:
+            return None
+        group_assignment = WorkoutGroupAssignment.objects.filter(
+            group=membership.group, is_active=True
+        ).select_related("plan").prefetch_related(
+            "plan__weeks__days__exercises",
+        ).order_by("-assigned_at").first()
+        if not group_assignment:
+            return None
+        return WorkoutPlanDetailSerializer(group_assignment.plan).data
+
+    # PREMIUM (or fallback): use individual TrainerAssignment
     ta = TrainerAssignment.objects.filter(client=client_user, is_active=True).first()
     if not ta:
         return None
@@ -189,7 +240,33 @@ def complete_workout_day(client_user, day_id, notes=""):
 def get_client_progress(client_user):
     """
     Returns overall progress stats: completed days, total days, %.
+    GROUP  → reads from the group's assigned WorkoutPlan.
+    PREMIUM → reads from their individual WorkoutAssignment.
     """
+    plan_name = _get_client_plan_name(client_user)
+
+    if plan_name == "GROUP":
+        ta = TrainerAssignment.objects.filter(client=client_user, is_active=True).first()
+        if not ta:
+            return {"progress_pct": 0, "completed_days": 0, "total_days": 0}
+        try:
+            membership = ta.group_membership
+        except TrainerGroupMember.DoesNotExist:
+            return {"progress_pct": 0, "completed_days": 0, "total_days": 0}
+        ga = WorkoutGroupAssignment.objects.filter(
+            group=membership.group, is_active=True
+        ).select_related("plan").first()
+        if not ga:
+            return {"progress_pct": 0, "completed_days": 0, "total_days": 0}
+        total = WorkoutDay.objects.filter(week__plan=ga.plan).count()
+        return {
+            "progress_pct": 0,
+            "completed_days": 0,
+            "total_days": total,
+            "plan_title": ga.plan.title,
+        }
+
+    # PREMIUM path
     ta = TrainerAssignment.objects.filter(client=client_user, is_active=True).first()
     if not ta:
         return {"progress_pct": 0, "completed_days": 0, "total_days": 0}

@@ -27,6 +27,39 @@ def _calculate_amount(plan: SubscriptionPlan, billing_cycle: str) -> Decimal:
     return plan.price_monthly
 
 
+def _calculate_prorated_upgrade_amount(
+    existing_sub: ClientSubscription,
+    new_plan: SubscriptionPlan,
+    new_billing_cycle: str,
+) -> Decimal:
+    """
+    Calculate the prorated amount the client owes when upgrading plans.
+
+    Logic:
+        credit = (days_remaining / total_days) * amount_already_paid
+        charge  = new_plan_price - credit
+
+    If the result is negative (e.g. client overpaid), charge 0.
+    """
+    now = timezone.now()
+    new_price = _calculate_amount(new_plan, new_billing_cycle)
+
+    if not existing_sub or not existing_sub.expires_at or not existing_sub.started_at:
+        return new_price  # no proration possible — charge full price
+
+    total_seconds  = (existing_sub.expires_at - existing_sub.started_at).total_seconds()
+    remain_seconds = (existing_sub.expires_at - now).total_seconds()
+
+    if total_seconds <= 0 or remain_seconds <= 0:
+        return new_price  # already expired — charge full price
+
+    ratio  = Decimal(str(remain_seconds / total_seconds))
+    credit = (ratio * existing_sub.amount_paid).quantize(Decimal('0.01'))
+    charge = new_price - credit
+
+    return max(charge, Decimal('0.00'))
+
+
 def _calculate_expiry(billing_cycle: str) -> object:
     """Return expiry datetime based on billing cycle."""
     now = timezone.now()
@@ -91,29 +124,40 @@ def purchase_subscription(user, plan_id: int, billing_cycle: str, auto_renew: bo
     Create a ClientSubscription with payment_status=PENDING.
 
     Business rules:
-    - Client can't have two ACTIVE subscriptions to the same plan.
-    - Cancel any existing ACTIVE subscription before upgrading.
-      (Upgrade = different plan. The old subscription is CANCELLED.)
-    - FREE plan subscriptions are activated immediately (no payment needed).
+    - Client cannot subscribe to the same plan they are already on.
+    - If upgrading (different plan), the old ACTIVE subscription stays ACTIVE
+      until Stripe payment is confirmed — it is NOT cancelled here.
+      This prevents the client from losing access if they abandon the payment.
+    - Any stale PENDING subscriptions (previous uncompleted attempts) are
+      cancelled upfront to keep the DB clean.
+    - Prorated amount is calculated upfront based on the current ACTIVE sub.
+    - New subscription starts fresh (30 days / 365 days from activation date).
     """
     plan = SubscriptionPlan.objects.get(id=plan_id)
 
-    # Cancel any current ACTIVE subscription (upgrade/change flow)
+    # Check if client already has an ACTIVE subscription
     existing_active = ClientSubscription.objects.filter(
         client=user,
         payment_status=ClientSubscription.PaymentStatus.ACTIVE,
     ).first()
 
-    if existing_active:
-        if existing_active.plan.id == plan_id:
-            raise serializers.ValidationError(
-                {"detail": "You are already subscribed to this plan."}
-            )
-        # Cancel the old one before creating the new subscription
-        existing_active.payment_status = ClientSubscription.PaymentStatus.CANCELLED
-        existing_active.save(update_fields=["payment_status", "updated_at"])
+    if existing_active and existing_active.plan.id == plan_id:
+        raise serializers.ValidationError(
+            {"detail": "You are already subscribed to this plan."}
+        )
 
-    amount = _calculate_amount(plan, billing_cycle)
+    # Calculate prorated amount NOW (before cleaning up stale records)
+    if existing_active:
+        amount = _calculate_prorated_upgrade_amount(existing_active, plan, billing_cycle)
+    else:
+        amount = _calculate_amount(plan, billing_cycle)
+
+    # Cancel any stale PENDING subscriptions (abandoned Stripe sessions)
+    # The old ACTIVE plan is intentionally left untouched until payment succeeds.
+    ClientSubscription.objects.filter(
+        client=user,
+        payment_status=ClientSubscription.PaymentStatus.PENDING,
+    ).update(payment_status=ClientSubscription.PaymentStatus.CANCELLED)
 
     subscription = ClientSubscription.objects.create(
         client        = user,
@@ -124,20 +168,14 @@ def purchase_subscription(user, plan_id: int, billing_cycle: str, auto_renew: bo
         amount_paid   = amount,
     )
 
-    # FREE plans require no payment — activate immediately
-    if plan.name == SubscriptionPlan.PlanName.FREE:
-        subscription = _activate_subscription(subscription)
-
     return subscription
 
 
 def confirm_subscription_payment(user, subscription_id: int) -> ClientSubscription:
     """
-    Simulate Razorpay payment confirmation.
-
-    In production this becomes:
-        1. Verify Razorpay signature
-        2. Call _activate_subscription
+    Confirm payment locally (dev/testing only).
+    Activates the PENDING subscription and cancels any other ACTIVE plan
+    the client had — same logic as the Stripe webhook.
     """
     try:
         subscription = ClientSubscription.objects.get(
@@ -151,7 +189,46 @@ def confirm_subscription_payment(user, subscription_id: int) -> ClientSubscripti
             {"detail": f"Subscription is already {subscription.payment_status}."}
         )
 
-    return _activate_subscription(subscription)
+    # Activate the new subscription
+    subscription = _activate_subscription(subscription)
+
+    # Cancel any old ACTIVE subscriptions now that payment is confirmed
+    ClientSubscription.objects.filter(
+        client=user,
+        payment_status=ClientSubscription.PaymentStatus.ACTIVE,
+    ).exclude(id=subscription.id).update(
+        payment_status=ClientSubscription.PaymentStatus.CANCELLED
+    )
+
+    return subscription
+
+
+def handle_successful_payment(subscription_id: int):
+    """
+    Called by the Stripe Webhook when checkout.session.completed fires.
+
+    Activates the new subscription, then cancels any previously ACTIVE
+    subscription the client had (the old plan they were upgrading from).
+    This is the ONLY place where the old plan gets cancelled — ensuring
+    the client never loses access if they abandon the Stripe checkout.
+    """
+    try:
+        subscription = ClientSubscription.objects.select_related('client').get(
+            id=subscription_id
+        )
+        if subscription.payment_status == ClientSubscription.PaymentStatus.PENDING:
+            # Step 1: Activate new subscription
+            _activate_subscription(subscription)
+
+            # Step 2: Cancel the client's old ACTIVE subscription (if any)
+            ClientSubscription.objects.filter(
+                client=subscription.client,
+                payment_status=ClientSubscription.PaymentStatus.ACTIVE,
+            ).exclude(id=subscription.id).update(
+                payment_status=ClientSubscription.PaymentStatus.CANCELLED
+            )
+    except ClientSubscription.DoesNotExist:
+        pass
 
 
 def get_current_subscription(user) -> ClientSubscription | None:

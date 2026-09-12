@@ -32,7 +32,9 @@ const ClientAssignments = () => {
       if (searchTerm) params.search = searchTerm;
 
       const res = await clientManagementApi.getAdminClientAssignments(params);
-      setClients(res.data || []);
+      const allClients = res.data || [];
+      const paidClients = allClients.filter(c => c.subscription_plan && c.subscription_plan !== 'FREE');
+      setClients(paidClients);
     } catch (error) {
       toast.error("Failed to load client assignments.");
     } finally {

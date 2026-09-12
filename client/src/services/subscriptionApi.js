@@ -9,9 +9,9 @@ export const subscriptionApi = {
   },
 
   // ── Client ────────────────────────────────────────────────────────────────
-  /** POST /api/subscriptions/client/purchase/ */
+  /** POST /api/subscriptions/client/create-stripe-session/ */
   purchase: async ({ plan_id, billing_cycle, auto_renew = false }) => {
-    const res = await api.post('/api/subscriptions/client/purchase/', {
+    const res = await api.post('/api/subscriptions/client/create-stripe-session/', {
       plan_id, billing_cycle, auto_renew,
     });
     return res.data;

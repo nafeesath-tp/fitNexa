@@ -33,6 +33,11 @@ urlpatterns = [
     path('api/client-management/', include('client_management.urls')),
     path('api/workouts/', include('workout_plans.urls')),
     path('api/diets/', include('diet_plans.urls')),
+    path('api/ai-plans/', include('ai_plans.urls')),
+    path('api/scheduling/', include('scheduling.urls')),
+    path('api/group-workouts/', include('group_workouts.urls')),
+    path('api/video-sessions/', include('video_sessions.urls')),
+    path('api/chat/', include('chat.urls')),
 ]
 
 if settings.DEBUG:
