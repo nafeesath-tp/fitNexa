@@ -107,10 +107,11 @@ class PersonalTrainingSession(models.Model):
         CANCELLED = "CANCELLED", "Cancelled"
         RESCHEDULED = "RESCHEDULED", "Rescheduled"
         COMPLETED = "COMPLETED", "Completed"
+        NO_SHOW = "NO_SHOW", "No-Show"
 
     client = models.ForeignKey(User, on_delete=models.CASCADE, related_name='client_sessions')
     trainer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='trainer_sessions')
-    slot = models.OneToOneField(TrainerSlot, on_delete=models.PROTECT, related_name='session')
+    slot = models.ForeignKey(TrainerSlot, on_delete=models.PROTECT, related_name='sessions', null=True, blank=True)
     
     # Mirrored for easy querying and historical records
     date = models.DateField()

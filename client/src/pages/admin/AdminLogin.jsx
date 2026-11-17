@@ -19,7 +19,7 @@ const AdminLogin = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user, setAuth, clearAuth } = useAuthStore();
 
-  const { register, handleSubmit, formState: { errors } } = useForm({
+  const { register, handleSubmit, setError, formState: { errors } } = useForm({
     resolver: zodResolver(adminLoginSchema),
     mode: 'onTouched'
   });
@@ -32,7 +32,10 @@ const AdminLogin = () => {
   const onSubmit = async (data) => {
     try {
       setIsLoading(true);
-      const response = await authApi.login(data);
+      const response = await authApi.login({
+        email: data.email.trim(),
+        password: data.password
+      });
       
       if (response.success) {
         if (response.data.role !== 'ADMIN') {
@@ -45,9 +48,26 @@ const AdminLogin = () => {
         setAuth(response.data);
         toast.success('Admin login successful');
         navigate('/admin/dashboard', { replace: true });
+      } else {
+        toast.error(response.message || 'Login failed');
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Login failed');
+      console.error('Admin login error:', error);
+      const backendErrors = error.response?.data?.errors;
+      let errorMsg = error.response?.data?.message || error.response?.data?.detail;
+
+      if (backendErrors && typeof backendErrors === 'object') {
+        if (backendErrors.email) {
+          setError('email', { type: 'manual', message: Array.isArray(backendErrors.email) ? backendErrors.email[0] : backendErrors.email });
+        }
+        if (backendErrors.password) {
+          setError('password', { type: 'manual', message: Array.isArray(backendErrors.password) ? backendErrors.password[0] : backendErrors.password });
+        }
+        const firstVal = Object.values(backendErrors)[0];
+        errorMsg = Array.isArray(firstVal) ? firstVal[0] : (typeof firstVal === 'string' ? firstVal : JSON.stringify(firstVal));
+      }
+
+      toast.error(errorMsg || error.message || 'Login failed');
     } finally {
       setIsLoading(false);
     }

@@ -57,18 +57,18 @@ class SubscriptionPlan(models.Model):
         verbose_name_plural = "Subscription Plans"
 
     def __str__(self):
-        return f"{self.name} (₹{self.price_monthly}/mo)"
+        return f"{self.name} (${self.price_monthly}/mo)"
 
 
 class ClientSubscription(models.Model):
     """
     Records every subscription a CLIENT purchases.
 
-    Payment flow (Razorpay-ready):
+    Payment flow (Stripe Checkout):
         1.  Client hits Purchase → record created with payment_status=PENDING
-        2.  Client completes payment → Razorpay webhook fires
+        2.  Client completes payment → Stripe webhook fires
                                      → payment_status=ACTIVE, started_at/expires_at set
-        3.  (For now, a simulated confirm endpoint moves PENDING → ACTIVE)
+        3.  (A simulated confirm endpoint also allows dev/local confirmation)
 
     auto_renew: stored now so the Renew button can later become Auto-Renew
                 without a DB migration.

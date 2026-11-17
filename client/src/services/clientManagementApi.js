@@ -17,6 +17,11 @@ export const clientManagementApi = {
     return res.data;
   },
 
+  updateSessionCredits: async (clientId, credits) => {
+    const res = await api.patch(`/api/client-management/admin/credits/${clientId}/`, { session_credits: credits });
+    return res.data;
+  },
+
   // ── Trainer Endpoints ─────────────────────────────────────────────────────
   getTrainerMyClients: async () => {
     const res = await api.get("/api/client-management/trainer/my-clients/");

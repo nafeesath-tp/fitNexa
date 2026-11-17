@@ -149,6 +149,7 @@ def login_user(validated_data):
     access = refresh.access_token
 
     response_data = {
+        "id": user.id,
         "email": user.email,
         "role": user.role,
     }

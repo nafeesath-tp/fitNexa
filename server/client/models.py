@@ -140,6 +140,16 @@ class ClientProfile(models.Model):
 
     # ── Metadata ──────────────────────────────────────────────────────────────
 
+    session_credits = models.IntegerField(
+        default=0,
+        help_text="Number of personal training sessions the client can book.",
+    )
+
+    group_session_credits = models.IntegerField(
+        default=0,
+        help_text="Number of group workout sessions the client can attend.",
+    )
+
     is_profile_completed = models.BooleanField(
         default=False,
         help_text="Set to True once the client completes the full onboarding profile.",

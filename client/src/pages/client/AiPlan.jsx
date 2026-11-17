@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import MyWorkout from './MyWorkout';
 import MyDiet from './MyDiet';
-import { Dumbbell, Utensils, Sparkles, Loader2, CheckCircle2, Clock } from 'lucide-react';
+import { Dumbbell, Utensils, Sparkles, Loader2, CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
@@ -14,7 +14,13 @@ export default function AiPlan() {
   const { user } = useAuthStore();
   
   const [loading, setLoading] = useState(true);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [aiRequest, setAiRequest] = useState(null);
+  
+  // Week 2 State
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [feedback, setFeedback] = useState('');
+  const [daysPassed, setDaysPassed] = useState(0);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -30,6 +36,9 @@ export default function AiPlan() {
     food_dislikes_allergies: '',
   });
 
+  // Inline banner error (e.g. no trainer assigned)
+  const [bannerError, setBannerError] = useState(null);
+
   useEffect(() => {
     if (user?.is_profile_completed === false) {
       navigate('/client/setup', { replace: true });
@@ -38,12 +47,49 @@ export default function AiPlan() {
     fetchAiPlans();
   }, [user, navigate]);
 
+  // Background polling for AI Plan generation status
+  useEffect(() => {
+    if (!aiRequest || !['PENDING', 'GENERATING'].includes(aiRequest.status)) {
+      return;
+    }
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await aiPlansApi.getMyPlans();
+        if (res.success && res.data && res.data.length > 0) {
+          const latest = res.data[0];
+          setAiRequest(latest);
+
+          if (latest.status === 'GENERATED') {
+            toast.success("Your plans are generated and waiting for trainer review.");
+          } else if (latest.status === 'GENERATION_FAILED') {
+            toast.error(latest.error_message || "AI Plan generation failed.");
+          }
+        }
+      } catch (err) {
+        console.error("Polling error fetching AI plan status:", err);
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [aiRequest?.status]);
+
   const fetchAiPlans = async () => {
     try {
       setLoading(true);
       const res = await aiPlansApi.getMyPlans();
       if (res.success && res.data && res.data.length > 0) {
-        setAiRequest(res.data[0]); // latest request
+        const latest = res.data[0];
+        setAiRequest(latest);
+        
+        if (latest.status === 'ASSIGNED') {
+          // Calculate days passed since assignment
+          const assignedDate = new Date(latest.updated_at);
+          const now = new Date();
+          const diffTime = Math.abs(now - assignedDate);
+          const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+          setDaysPassed(diffDays);
+        }
       }
     } catch (error) {
       console.error("Error fetching AI plans:", error);
@@ -70,15 +116,50 @@ export default function AiPlan() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setBannerError(null);
+    if (isGenerating || (aiRequest && ['PENDING', 'GENERATING'].includes(aiRequest.status))) {
+      toast.error("An AI plan generation is already in progress.");
+      return;
+    }
     try {
-      const toastId = toast.loading('Generating your AI Plan...');
+      setIsGenerating(true);
       const res = await aiPlansApi.generatePlan(formData);
       if (res.success) {
-        toast.success(res.message, { id: toastId });
-        fetchAiPlans();
+        toast.success(res.message || "Your weekly workout and diet plans are being generated.");
+        await fetchAiPlans();
       }
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to generate plan');
+      const detail = error.response?.data?.detail;
+      const errorCode = error.response?.data?.error_code;
+      if (errorCode === 'NO_TRAINER_ASSIGNED') {
+        // Show as prominent inline banner, not just a toast
+        setBannerError(detail);
+      } else {
+        toast.error(detail || 'Failed to submit plan generation request');
+      }
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleFeedbackSubmit = async (e) => {
+    e.preventDefault();
+    if (isGenerating || (aiRequest && ['PENDING', 'GENERATING'].includes(aiRequest.status))) {
+      toast.error("An AI plan generation is already in progress.");
+      return;
+    }
+    try {
+      setIsGenerating(true);
+      const res = await aiPlansApi.generatePlan({ feedback });
+      if (res.success) {
+        toast.success(res.message || "Your adaptive plan is being generated in the background.");
+        setShowFeedbackModal(false);
+        await fetchAiPlans();
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to submit plan generation request');
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -127,7 +208,7 @@ export default function AiPlan() {
           <div className="mb-4 flex items-center justify-between bg-primary/10 border border-primary/20 p-4 rounded-xl">
             <div>
               <h3 className="text-primary font-bold flex items-center gap-2">
-                <Sparkles className="w-5 h-5" /> AI Personalized Plan Active
+                <Sparkles className="w-5 h-5" /> AI Plan Approved & Active
               </h3>
               <p className="text-sm text-gray-400 mt-1">
                 Week {aiRequest.week_number} • Assigned by {aiRequest.trainer_email || 'your trainer'}
@@ -135,43 +216,140 @@ export default function AiPlan() {
             </div>
           </div>
           {activeTab === 'workout' ? <MyWorkout /> : <MyDiet />}
+          
+          {/* Week 2 Generation Eligibility */}
+          <div className="mt-8 border-t border-border/50 pt-8 flex flex-col items-center">
+            {daysPassed < 6 ? (
+              <div className="bg-card border border-border p-6 rounded-xl text-center max-w-md">
+                <h4 className="text-white font-semibold mb-2">Week {aiRequest.week_number} Active</h4>
+                <p className="text-sm text-gray-400 mb-4">
+                  Week ends in {7 - daysPassed} days
+                </p>
+                <button disabled className="bg-gray-600 text-gray-300 px-6 py-2 rounded-lg cursor-not-allowed">
+                  Review Week {aiRequest.week_number}
+                </button>
+              </div>
+            ) : (
+              <div className="bg-card border border-border p-6 rounded-xl text-center max-w-md shadow-[0_0_15px_rgba(34,197,94,0.1)]">
+                <h4 className="text-white font-bold text-lg mb-2">Week {aiRequest.week_number} Completed!</h4>
+                <p className="text-sm text-gray-400 mb-6">
+                  Tell us how your week went so we can adapt your next plan.
+                </p>
+                <button 
+                  onClick={() => setShowFeedbackModal(true)}
+                  className="bg-primary text-black font-semibold px-6 py-3 rounded-lg hover:bg-primary/90 transition-colors w-full"
+                >
+                  Review Week {aiRequest.week_number} & Generate Week {aiRequest.week_number + 1}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* Feedback Modal */}
+        {showFeedbackModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <div className="bg-card w-full max-w-lg rounded-2xl p-6 border border-border">
+              <h3 className="text-2xl font-bold text-white mb-2">How was your Week {aiRequest.week_number}?</h3>
+              <p className="text-sm text-gray-400 mb-6">What went well? What was difficult? Any changes you'd like next week?</p>
+              
+              <form onSubmit={handleFeedbackSubmit}>
+                <textarea
+                  required
+                  value={feedback}
+                  onChange={(e) => setFeedback(e.target.value)}
+                  placeholder="The leg workout was too intense and I need more recovery time..."
+                  className="w-full h-32 bg-background border border-border rounded-lg p-4 text-white focus:border-primary focus:outline-none mb-6 resize-none"
+                />
+                
+                <div className="flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowFeedbackModal(false)}
+                    className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isGenerating}
+                    className="bg-primary text-black font-semibold px-6 py-2 rounded-lg hover:bg-primary/90 disabled:opacity-50"
+                  >
+                    {isGenerating ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : `Generate Week ${aiRequest.week_number + 1}`}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
 
   // If plan is pending/generating/reviewed but NOT assigned
   if (aiRequest && ['PENDING', 'GENERATING', 'GENERATED', 'TRAINER_REVIEWED'].includes(aiRequest.status)) {
+    const isGeneratingStep = ['PENDING', 'GENERATING'].includes(aiRequest.status);
+    const isGeneratedStep = aiRequest.status === 'GENERATED';
+    const isReviewedStep = aiRequest.status === 'TRAINER_REVIEWED';
+
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-80px)] p-6">
-        <div className="max-w-md w-full bg-card p-8 rounded-2xl border border-border text-center">
+        <div className="max-w-md w-full bg-card p-8 rounded-2xl border border-border text-center shadow-2xl">
           <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Clock className="w-8 h-8 text-primary animate-pulse" />
+            {isGeneratingStep ? (
+              <Loader2 className="w-8 h-8 text-primary animate-spin" />
+            ) : (
+              <Clock className="w-8 h-8 text-primary animate-pulse" />
+            )}
           </div>
-          <h2 className="text-2xl font-bold text-white mb-2">Plan in Progress</h2>
+          <h2 className="text-2xl font-bold text-white mb-2">
+            {isGeneratingStep ? "Generating Your Plan" : "Plan in Progress"}
+          </h2>
           <p className="text-gray-400 mb-6">
-            Your Week {aiRequest.week_number} AI Plan is currently 
-            <span className="text-primary font-medium ml-1">
-              {aiRequest.status === 'TRAINER_REVIEWED' ? 'awaiting final assignment' : 
-               aiRequest.status === 'GENERATED' ? 'awaiting trainer review' : 'being generated'}
-            </span>.
+            {isGeneratingStep
+              ? "Your weekly workout and diet plans are being generated."
+              : isGeneratedStep
+              ? "Your plans are generated and waiting for trainer review."
+              : "Your plans have been reviewed and are awaiting final assignment."}
           </p>
-          <div className="p-4 bg-background rounded-lg text-sm text-gray-400 text-left">
-            <div className="flex items-center gap-2 mb-2">
-              <CheckCircle2 className="w-4 h-4 text-green-500" />
-              <span>AI Generation Complete</span>
-            </div>
-            <div className="flex items-center gap-2">
-              {['TRAINER_REVIEWED'].includes(aiRequest.status) ? (
-                <CheckCircle2 className="w-4 h-4 text-green-500" />
+          <div className="p-4 bg-background rounded-xl text-sm text-gray-400 text-left border border-border/50 space-y-3">
+            <div className="flex items-center gap-2.5">
+              {isGeneratingStep ? (
+                <>
+                  <Loader2 className="w-4 h-4 text-primary animate-spin flex-shrink-0" />
+                  <span className="text-primary font-medium">Generating AI Plan (Workout & Diet)...</span>
+                </>
               ) : (
-                <div className="w-4 h-4 rounded-full border-2 border-gray-600" />
+                <>
+                  <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+                  <span className="text-gray-200">AI Generation Complete</span>
+                </>
               )}
-              <span className={['TRAINER_REVIEWED'].includes(aiRequest.status) ? 'text-gray-200' : ''}>
-                Trainer Review
-              </span>
+            </div>
+            <div className="flex items-center gap-2.5">
+              {isReviewedStep ? (
+                <>
+                  <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+                  <span className="text-gray-200">Trainer Review Complete</span>
+                </>
+              ) : isGeneratedStep ? (
+                <>
+                  <Clock className="w-4 h-4 text-amber-400 animate-pulse flex-shrink-0" />
+                  <span className="text-amber-300 font-medium">Waiting for Trainer Review</span>
+                </>
+              ) : (
+                <>
+                  <div className="w-4 h-4 rounded-full border-2 border-gray-600 flex-shrink-0" />
+                  <span className="text-gray-500">Trainer Review</span>
+                </>
+              )}
             </div>
           </div>
+          {isGeneratingStep && (
+            <p className="text-xs text-gray-500 mt-4">
+              Background generation in progress. You can safely browse other pages while this completes.
+            </p>
+          )}
         </div>
       </div>
     );
@@ -189,10 +367,43 @@ export default function AiPlan() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+
+        {/* No trainer assigned — prominent warning */}
+        {bannerError && (
+          <div className="p-4 bg-amber-500/10 border border-amber-500/30 text-amber-300 rounded-xl flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5 text-amber-400" />
+            <div className="flex-1">
+              <p className="font-semibold text-amber-300">Cannot Generate Plan</p>
+              <p className="text-sm mt-1 text-amber-300/80">{bannerError}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setBannerError(null)}
+              className="text-amber-400/60 hover:text-amber-300 transition-colors flex-shrink-0 text-lg leading-none"
+              title="Dismiss"
+            >✕</button>
+          </div>
+        )}
+
         {aiRequest && aiRequest.status === 'GENERATION_FAILED' && (
           <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl">
-            <p className="font-bold">Previous generation failed:</p>
-            <p className="text-sm mt-1">{aiRequest.error_message}</p>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="font-bold">Previous generation failed</p>
+                {aiRequest.error_message && (
+                  <p className="text-sm mt-1 text-red-300/80">{aiRequest.error_message}</p>
+                )}
+                <p className="text-xs mt-2 text-red-400/60">Fill in the form below and click "Generate My Plan" to try again.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAiRequest(null)}
+                className="text-red-400/60 hover:text-red-300 transition-colors flex-shrink-0 text-lg leading-none"
+                title="Dismiss"
+              >
+                ✕
+              </button>
+            </div>
           </div>
         )}
 
@@ -347,12 +558,21 @@ export default function AiPlan() {
           </div>
         </div>
 
-        <div className="flex justify-end pt-4">
+        <div className="flex justify-end pt-6 border-t border-border mt-8">
           <button 
             type="submit"
-            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-background font-bold py-3 px-8 rounded-xl transition-all shadow-lg shadow-primary/20"
+            disabled={isGenerating}
+            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-background px-8 py-3 rounded-xl font-bold transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Sparkles className="w-5 h-5" /> Generate My Plan
+            {isGenerating ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" /> Generating...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-5 h-5" /> Generate My Plan
+              </>
+            )}
           </button>
         </div>
       </form>

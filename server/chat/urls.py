@@ -4,12 +4,16 @@ from .views import (
     ConversationListCreateView,
     ConversationDetailView,
     MessageListCreateView,
+    WebSocketTokenView,
     ReportMessageView,
     AdminChatReportListView,
     AdminReviewReportView,
 )
 
 urlpatterns = [
+    # WebSocket Auth Token
+    path('ws-token/', WebSocketTokenView.as_view(), name='chat-ws-token'),
+
     # Conversations
     path('conversations/', ConversationListCreateView.as_view(), name='chat-conversations'),
     path('conversations/<int:pk>/', ConversationDetailView.as_view(), name='chat-conversation-detail'),

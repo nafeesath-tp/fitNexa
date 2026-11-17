@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { groupWorkoutsApi } from '../../services/groupWorkoutsApi';
 import { Layers, Users, Calendar, Filter, Clock, CheckCircle2, XCircle, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { confirmDialog } from '../../components/ui/CustomAlert';
 import { cn } from '../../utils/cn';
 import { useNavigate } from 'react-router-dom';
 import { videoSessionsApi } from '../../services/videoSessionsApi';
@@ -68,7 +69,13 @@ export default function ClientGroupWorkouts() {
   };
 
   const handleLeave = async (session) => {
-    if (!window.confirm('Cancel your booking for this session?')) return;
+    const confirmed = await confirmDialog({
+      title: "Cancel Booking",
+      message: "Are you sure you want to cancel your booking for this group session?",
+      confirmText: "Cancel Booking",
+      variant: "danger",
+    });
+    if (!confirmed) return;
     setActionLoading(session.id);
     try {
       await groupWorkoutsApi.leaveSession(session.id);

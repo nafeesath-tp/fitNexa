@@ -40,8 +40,19 @@ class TrainerSlotSerializer(serializers.ModelSerializer):
     class Meta:
         model = TrainerSlot
         fields = ['id', 'date', 'start_time', 'end_time', 'status', 'created_at']
-        read_only_fields = ['id', 'created_at', 'end_time', 'date', 'start_time']
-        
+        read_only_fields = ['id', 'created_at']
+        extra_kwargs = {
+            'end_time': {'required': False},
+            'status': {'required': False},
+        }
+
+    def validate(self, data):
+        start_time = data.get('start_time')
+        end_time = data.get('end_time')
+        if start_time and end_time and start_time >= end_time:
+            raise serializers.ValidationError({"end_time": "End time must be after start time."})
+        return data
+
     def validate_status(self, value):
         # Prevent trainers from changing BOOKED status.
         # If this is an update, self.instance exists.

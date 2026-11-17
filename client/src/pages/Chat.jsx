@@ -15,6 +15,7 @@ import { MessageSquare, RefreshCw } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { useChatStore } from '../stores/chatStore';
 import { chatApi } from '../services/chatApi';
+import { authApi } from '../services/auth/authApi';
 import ConversationList from '../components/chat/ConversationList';
 import ChatWindow from '../components/chat/ChatWindow';
 import toast from 'react-hot-toast';
@@ -48,6 +49,13 @@ export default function Chat() {
   };
 
   useEffect(() => {
+    if (!user?.id) {
+      authApi.checkAuth().then(res => {
+        if (res.success) {
+          useAuthStore.getState().setAuth(res.data);
+        }
+      }).catch(() => {});
+    }
     loadConversations();
     return () => disconnectWs(); // Cleanup WS on unmount
   }, []);

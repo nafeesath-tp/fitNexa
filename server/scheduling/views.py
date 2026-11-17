@@ -11,10 +11,11 @@ from .serializers import (
 )
 from .services import (
     generate_slots_for_trainer, block_date_and_slots, unblock_date_and_slots,
-    book_session, reschedule_session, cancel_session, complete_session
+    book_session, reschedule_session, cancel_session, complete_session, record_client_no_show
 )
 from client_management.models import TrainerAssignment
 from accounts.models import User
+from accounts.permissions import IsAdmin
 from django.core.exceptions import ValidationError as DjangoValidationError
 import datetime
 
@@ -44,6 +45,11 @@ class TrainerAvailabilityListCreateView(generics.ListCreateAPIView):
         try:
             instance = serializer.save(trainer=self.request.user)
             instance.clean()
+            # Automatically generate slots for the next 14 days so clients can immediately book
+            import datetime
+            from .services import generate_slots_for_trainer
+            today = datetime.date.today()
+            generate_slots_for_trainer(self.request.user, today, today + datetime.timedelta(days=14))
         except DjangoValidationError as e:
             instance.delete()
             raise drf_serializers.ValidationError(e.message_dict if hasattr(e, 'message_dict') else {'detail': e.messages})
@@ -62,6 +68,24 @@ class TrainerAvailabilityDetailView(generics.RetrieveUpdateDestroyAPIView):
             instance.clean()
         except DjangoValidationError as e:
             raise drf_serializers.ValidationError(e.message_dict if hasattr(e, 'message_dict') else {'detail': e.messages})
+
+    def perform_destroy(self, instance):
+        trainer = instance.trainer
+        day_of_week = instance.day_of_week
+        super().perform_destroy(instance)
+        
+        # If no other availability remains for this day_of_week, remove unbooked available slots on this day of week
+        if not TrainerAvailability.objects.filter(trainer=trainer, day_of_week=day_of_week).exists():
+            import datetime
+            today = datetime.date.today()
+            slots = TrainerSlot.objects.filter(
+                trainer=trainer,
+                date__gte=today,
+                status=TrainerSlot.Status.AVAILABLE
+            )
+            for s in slots:
+                if s.date.weekday() == day_of_week:
+                    s.delete()
 
 
 class BlockedDateListCreateView(generics.ListCreateAPIView):
@@ -101,7 +125,7 @@ class BlockedDateDetailView(generics.DestroyAPIView):
         unblock_date_and_slots(self.request.user, instance.date)
 
 
-class TrainerSlotListView(generics.ListAPIView):
+class TrainerSlotListView(generics.ListCreateAPIView):
     serializer_class = TrainerSlotSerializer
     permission_classes = [IsTrainerUser]
 
@@ -116,6 +140,43 @@ class TrainerSlotListView(generics.ListAPIView):
             qs = qs.filter(date__lte=end_date)
             
         return qs.order_by('date', 'start_time')
+
+    def perform_create(self, serializer):
+        trainer = self.request.user
+        date = serializer.validated_data.get('date')
+        start_time = serializer.validated_data.get('start_time')
+        end_time = serializer.validated_data.get('end_time')
+
+        if not end_time:
+            settings_obj = TrainerSchedulingSettings.objects.filter(trainer=trainer).first()
+            duration_minutes = settings_obj.session_duration if settings_obj else 45
+            start_dt = datetime.datetime.combine(date, start_time)
+            end_dt = start_dt + datetime.timedelta(minutes=duration_minutes)
+            end_time = end_dt.time()
+
+        # Handle duplicate slot gracefully
+        existing = TrainerSlot.objects.filter(trainer=trainer, date=date, start_time=start_time).first()
+        if existing:
+            if existing.status == TrainerSlot.Status.BLOCKED:
+                existing.status = TrainerSlot.Status.AVAILABLE
+                existing.end_time = end_time
+                existing.save(update_fields=['status', 'end_time'])
+            serializer.instance = existing
+            return
+
+        serializer.save(trainer=trainer, end_time=end_time, status=TrainerSlot.Status.AVAILABLE)
+
+
+class TrainerSlotDestroyView(generics.DestroyAPIView):
+    permission_classes = [IsTrainerUser]
+
+    def get_queryset(self):
+        return TrainerSlot.objects.filter(trainer=self.request.user)
+
+    def perform_destroy(self, instance):
+        if instance.status == TrainerSlot.Status.BOOKED:
+            raise drf_serializers.ValidationError({"detail": "Cannot delete a booked slot."})
+        instance.delete()
 
 
 class GenerateSlotsView(views.APIView):
@@ -324,6 +385,28 @@ class TrainerCompleteSessionView(views.APIView):
     def patch(self, request, pk):
         try:
             session = complete_session(request.user, pk)
+            serializer = PersonalTrainingSessionSerializer(session)
+            return Response(serializer.data)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+class TrainerCancelSessionView(views.APIView):
+    permission_classes = [IsTrainerUser]
+
+    def patch(self, request, pk):
+        try:
+            session = cancel_session(request.user, pk, is_trainer=True)
+            serializer = PersonalTrainingSessionSerializer(session)
+            return Response(serializer.data)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+class TrainerNoShowSessionView(views.APIView):
+    permission_classes = [IsTrainerUser]
+
+    def patch(self, request, pk):
+        try:
+            session = record_client_no_show(request.user, pk)
             serializer = PersonalTrainingSessionSerializer(session)
             return Response(serializer.data)
         except ValueError as e:

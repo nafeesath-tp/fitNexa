@@ -156,4 +156,12 @@ def end_video_session(trainer, video_session_id):
             
         video_session.save(update_fields=['status', 'ended_at', 'trainer_left_at', 'duration_seconds'])
         
+        # Also mark the parent PersonalTrainingSession as COMPLETED automatically
+        if video_session.personal_session and video_session.personal_session.status in ['BOOKED', 'RESCHEDULED']:
+            from scheduling.models import PersonalTrainingSession
+            ps = video_session.personal_session
+            ps.status = PersonalTrainingSession.Status.COMPLETED
+            ps.completed_at = timezone.now()
+            ps.save(update_fields=['status', 'completed_at'])
+            
         return video_session

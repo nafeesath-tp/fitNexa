@@ -1,13 +1,20 @@
-from rest_framework import views, generics, status
+from rest_framework import generics, views, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from django.db.models import Sum, Count, Avg, F
+from django.utils import timezone
+import datetime
 
 from .models import VideoSession
-from .serializers import VideoSessionSerializer, VideoSessionJoinResponseSerializer
+from .serializers import (
+    VideoSessionSerializer, 
+    VideoSessionJoinResponseSerializer,
+    AdminVideoSessionLogSerializer
+)
 from .services import join_video_session, start_video_session, end_video_session, get_or_create_video_session
 from scheduling.models import PersonalTrainingSession
 from group_workouts.models import GroupWorkoutSession
+from accounts.permissions import IsAdmin
 
 class VideoSessionInitView(views.APIView):
     permission_classes = [IsAuthenticated]
@@ -84,7 +91,7 @@ class VideoSessionDetailView(generics.RetrieveAPIView):
 
 class AdminVideoSessionLogsView(generics.ListAPIView):
     permission_classes = [IsAdminUser]
-    serializer_class = VideoSessionSerializer
+    serializer_class = AdminVideoSessionLogSerializer
     queryset = VideoSession.objects.all().order_by('-created_at')
 
     def get_queryset(self):

@@ -5,7 +5,7 @@ from .views import (
     TrainerAddWeekAPIView,
     TrainerAddDayAPIView,
     TrainerAddExerciseAPIView,
-    TrainerDeleteExerciseAPIView,
+    TrainerExerciseDetailAPIView,
     TrainerAssignPlanAPIView,
     TrainerWorkoutAssignmentListAPIView,
     ClientCurrentWorkoutAPIView,
@@ -22,7 +22,7 @@ urlpatterns = [
     path("trainer/plans/<int:plan_id>/weeks/",                              TrainerAddWeekAPIView.as_view(),     name="trainer-add-week"),
     path("trainer/plans/<int:plan_id>/weeks/<int:week_id>/days/",           TrainerAddDayAPIView.as_view(),      name="trainer-add-day"),
     path("trainer/plans/<int:plan_id>/days/<int:day_id>/exercises/",        TrainerAddExerciseAPIView.as_view(), name="trainer-add-exercise"),
-    path("trainer/plans/<int:plan_id>/exercises/<int:exercise_id>/",        TrainerDeleteExerciseAPIView.as_view(), name="trainer-delete-exercise"),
+    path("trainer/plans/<int:plan_id>/exercises/<int:exercise_id>/",        TrainerExerciseDetailAPIView.as_view(), name="trainer-exercise-detail"),
 
     # ── Trainer: Assignment ───────────────────────────────────────────────────
     path("trainer/plans/<int:plan_id>/assign/",           TrainerAssignPlanAPIView.as_view(),            name="trainer-assign-plan"),

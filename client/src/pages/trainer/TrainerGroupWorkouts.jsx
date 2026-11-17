@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { groupWorkoutsApi } from '../../services/groupWorkoutsApi';
 import { Users, Plus, Calendar, ChevronRight, CheckCircle, XCircle, Clock, Layers, Trash2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { confirmDialog } from '../../components/ui/CustomAlert';
 import { cn } from '../../utils/cn';
 import { useNavigate } from 'react-router-dom';
 import { videoSessionsApi } from '../../services/videoSessionsApi';
@@ -93,7 +94,13 @@ export default function TrainerGroupWorkouts() {
   };
 
   const handleCancelSession = async (sessionId) => {
-    if (!window.confirm('Cancel this session?')) return;
+    const confirmed = await confirmDialog({
+      title: "Cancel Session",
+      message: "Are you sure you want to cancel this group workout session?",
+      confirmText: "Cancel Session",
+      variant: "danger",
+    });
+    if (!confirmed) return;
     try {
       await groupWorkoutsApi.cancelSession(sessionId);
       fetchSessions(selectedWorkout.id);

@@ -47,6 +47,14 @@ export const schedulingApi = {
     const res = await api.get('/api/scheduling/trainer/slots/', { params });
     return res.data;
   },
+  createSlot: async (data) => {
+    const res = await api.post('/api/scheduling/trainer/slots/', data);
+    return res.data;
+  },
+  deleteSlot: async (id) => {
+    const res = await api.delete(`/api/scheduling/trainer/slots/${id}/`);
+    return res.data;
+  },
   generateSlots: async (data) => {
     const res = await api.post('/api/scheduling/trainer/generate-slots/', data);
     return res.data;
@@ -96,6 +104,14 @@ export const schedulingApi = {
   },
   completeSession: async (sessionId) => {
     const res = await api.patch(`/api/scheduling/trainer/sessions/${sessionId}/complete/`);
+    return res.data;
+  },
+  noShowSession: async (sessionId) => {
+    const res = await api.patch(`/api/scheduling/trainer/sessions/${sessionId}/no-show/`);
+    return res.data;
+  },
+  cancelTrainerSession: async (sessionId) => {
+    const res = await api.patch(`/api/scheduling/trainer/sessions/${sessionId}/cancel/`);
     return res.data;
   }
 };

@@ -41,7 +41,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.accept()
 
     async def disconnect(self, close_code):
-        if hasattr(self, 'room_group_name'):
+        if hasattr(self, 'room_group_name') and self.channel_layer:
             await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
 
     async def receive(self, text_data):
@@ -139,15 +139,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def verify_participant(self):
-        """Return True if self.user is the client or trainer of this conversation."""
+        """Return True if self.user is the client or trainer of this conversation, or an admin."""
+        if getattr(self.user, 'role', '') == 'ADMIN' or getattr(self.user, 'is_superuser', False):
+            return True
+        from django.db.models import Q
         return Conversation.objects.filter(
             id=self.conversation_id
         ).filter(
-            # client OR trainer
-            **{'client': self.user}
-        ).exists() or Conversation.objects.filter(
-            id=self.conversation_id,
-            trainer=self.user,
+            Q(client=self.user) | Q(trainer=self.user)
         ).exists()
 
     @database_sync_to_async

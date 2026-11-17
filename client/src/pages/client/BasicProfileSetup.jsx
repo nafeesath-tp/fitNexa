@@ -62,7 +62,16 @@ const BasicProfileSetup = () => {
         toast.error(response.message || 'Failed to save basic profile.');
       }
     } catch (error) {
-      toast.error(error.response?.data?.errors?.detail || 'An error occurred during setup.');
+      const errors = error.response?.data?.errors;
+      const message = error.response?.data?.message;
+      if (errors && typeof errors === 'object') {
+        // Show the first field-level error message from the server
+        const firstError = Object.values(errors)[0];
+        const errorMsg = Array.isArray(firstError) ? firstError[0] : firstError;
+        toast.error(errorMsg || message || 'An error occurred during setup.');
+      } else {
+        toast.error(message || 'An error occurred during setup.');
+      }
     } finally {
       setIsLoading(false);
     }

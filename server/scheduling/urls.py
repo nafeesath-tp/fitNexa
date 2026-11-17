@@ -6,6 +6,7 @@ from .views import (
     BlockedDateListCreateView,
     BlockedDateDetailView,
     TrainerSlotListView,
+    TrainerSlotDestroyView,
     GenerateSlotsView,
     BlockSlotView,
     UnblockSlotView,
@@ -16,7 +17,9 @@ from .views import (
     ClientRescheduleSessionView,
     ClientCancelSessionView,
     TrainerSessionListView,
-    TrainerCompleteSessionView
+    TrainerCompleteSessionView,
+    TrainerCancelSessionView,
+    TrainerNoShowSessionView,
 )
 
 urlpatterns = [
@@ -33,6 +36,7 @@ urlpatterns = [
     
     # Slots
     path('trainer/slots/', TrainerSlotListView.as_view(), name='trainer-slots-list'),
+    path('trainer/slots/<int:pk>/', TrainerSlotDestroyView.as_view(), name='trainer-slot-delete'),
     path('trainer/generate-slots/', GenerateSlotsView.as_view(), name='trainer-generate-slots'),
     path('trainer/slots/<int:pk>/block/', BlockSlotView.as_view(), name='trainer-slot-block'),
     path('trainer/slots/<int:pk>/unblock/', UnblockSlotView.as_view(), name='trainer-slot-unblock'),
@@ -50,4 +54,6 @@ urlpatterns = [
     # Trainer Session Endpoints
     path('trainer/sessions/', TrainerSessionListView.as_view(), name='trainer-sessions-list'),
     path('trainer/sessions/<int:pk>/complete/', TrainerCompleteSessionView.as_view(), name='trainer-session-complete'),
+    path('trainer/sessions/<int:pk>/cancel/', TrainerCancelSessionView.as_view(), name='trainer-session-cancel'),
+    path('trainer/sessions/<int:pk>/no-show/', TrainerNoShowSessionView.as_view(), name='trainer-session-no-show'),
 ]

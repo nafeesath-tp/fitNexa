@@ -48,6 +48,11 @@ export const workoutApi = {
     return res.data;
   },
 
+  updateExercise: async (planId, exerciseId, data) => {
+    const res = await api.patch(`/api/workouts/trainer/plans/${planId}/exercises/${exerciseId}/`, data);
+    return res.data;
+  },
+
   // ── Trainer: Assignment ─────────────────────────────────────────────────
   assignPlan: async (planId, trainerAssignmentId) => {
     const res = await api.post(`/api/workouts/trainer/plans/${planId}/assign/`, {

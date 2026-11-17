@@ -14,16 +14,19 @@ export default function ChatWindow({ conversation }) {
   const { user } = useAuthStore();
   const {
     messages, setMessages,
-    typingUserId, wsConnected,
-    sendRead, markConversationRead,
+    typingUserId, wsConnected, wsConnecting,
+    connectWs, sendRead, markConversationRead,
   } = useChatStore();
 
   const otherUser = conversation?.other_user;
   const conversationId = conversation?.id;
 
-  // Load message history when conversation changes
+  // Load message history & ensure WebSocket is connected when conversation changes
   useEffect(() => {
     if (!conversationId) return;
+
+    connectWs(conversationId);
+
     chatApi.getMessages(conversationId).then(data => {
       setMessages(data.results || []);
       // Mark as read
@@ -77,12 +80,27 @@ export default function ChatWindow({ conversation }) {
           <p className="text-[11px] text-gray-500 capitalize">{otherUser?.role?.toLowerCase()}</p>
         </div>
         {/* Connection indicator */}
-        <div className="ml-auto flex items-center gap-1.5">
-          {wsConnected
-            ? <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" title="Connected" />
-            : <WifiOff className="w-4 h-4 text-red-400" title="Disconnected" />
-          }
-          <span className="text-[10px] text-gray-500">{wsConnected ? 'Live' : 'Offline'}</span>
+        <div className="ml-auto flex items-center gap-2">
+          {wsConnected ? (
+            <span className="flex items-center gap-1.5 text-xs text-emerald-400">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-[11px] text-gray-400">Live</span>
+            </span>
+          ) : wsConnecting ? (
+            <span className="flex items-center gap-1.5 text-xs text-amber-400">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+              <span className="text-[11px] text-gray-400">Connecting...</span>
+            </span>
+          ) : (
+            <button
+              onClick={() => connectWs(conversationId)}
+              className="flex items-center gap-1.5 text-[11px] text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 px-2.5 py-1 rounded-md border border-red-500/20 transition-colors"
+              title="Click to reconnect"
+            >
+              <WifiOff className="w-3.5 h-3.5" />
+              <span>Offline (Retry)</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -97,7 +115,7 @@ export default function ChatWindow({ conversation }) {
           <MessageBubble
             key={msg.id}
             message={msg}
-            isMine={msg.sender_id === user?.id}
+            isMine={String(msg.sender_id) === String(user?.id)}
           />
         ))}
 

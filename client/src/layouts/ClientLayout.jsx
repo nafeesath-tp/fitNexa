@@ -40,7 +40,8 @@ const ClientLayout = () => {
   };
 
   // Determine if AI features should be locked
-  const isFreePlan = !user?.subscription_plan_name || user?.subscription_plan_name === 'FREE';
+  const plan = user?.subscription_plan_name || 'FREE';
+  const isFreePlan = plan === 'FREE';
 
   const navLinks = [
     { 
@@ -49,11 +50,14 @@ const ClientLayout = () => {
       locked: isFreePlan,
       lockMessage: 'Upgrade your plan and complete setup to access your Dashboard'
     },
-    { label: 'Workouts',    path: '/client/videos' },
+    ...(isFreePlan ? [{ 
+      label: 'Workouts',    
+      path: '/client/videos',
+    }] : []),
     { 
       label: 'AI Diet & Workout', 
       path: '/client/workout',
-      locked: user?.subscription_plan_name !== 'PREMIUM',
+      locked: plan !== 'PREMIUM',
       lockMessage: 'Upgrade to Premium to access AI Diet & Workout'
     },
     { 
@@ -62,13 +66,19 @@ const ClientLayout = () => {
       locked: isFreePlan,
       lockMessage: 'Upgrade to book personal sessions'
     },
-    { 
+    ...(plan !== 'PREMIUM' ? [{ 
       label: 'Group Workouts', 
       path: '/client/group-workouts',
+      locked: isFreePlan,
+      lockMessage: 'Upgrade your plan to access Group Workouts'
+    }] : []),
+    { 
+      label: 'Messages',     
+      path: '/client/chat',
+      locked: isFreePlan,
+      lockMessage: 'Upgrade your plan to message your trainer'
     },
-    { label: 'Messages',     path: '/client/chat' },
     { label: 'Subscription',path: '/client/plans' },
-    { label: 'Support',     path: '/client/support' },
   ];
 
   return (

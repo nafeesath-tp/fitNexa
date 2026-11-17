@@ -14,8 +14,9 @@ from django.utils import timezone
 from django.contrib.auth import get_user_model
 from rest_framework import generics, views, status
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from accounts.permissions import IsAdmin
 
 from .models import Conversation, Message, ChatReport, ALLOWED_EXTENSIONS, MAX_FILE_SIZE_MB
 from .serializers import (
@@ -26,6 +27,9 @@ from .serializers import (
 )
 from .permissions import IsConversationParticipant, IsMessageConversationParticipant
 from client_management.models import TrainerAssignment
+from rest_framework_simplejwt.tokens import AccessToken
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 User = get_user_model()
 
@@ -60,35 +64,42 @@ class ConversationListCreateView(views.APIView):
 
     def post(self, request):
         """
-        Client starts or retrieves a conversation with their assigned trainer.
-        Body: { "trainer_id": 8 }
+        Client starts a conversation with assigned trainer: { "trainer_id": 8 }
+        Trainer starts a conversation with assigned client: { "client_id": 9 }
         """
         user = request.user
-        if user.role != 'CLIENT':
-            return Response(
-                {"detail": "Only clients can initiate conversations."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        
+        if user.role == 'CLIENT':
+            trainer_id = request.data.get('trainer_id')
+            if not trainer_id:
+                return Response({"detail": "trainer_id is required."}, status=400)
+            try:
+                target_user = User.objects.get(id=trainer_id, role='TRAINER', is_active=True)
+            except User.DoesNotExist:
+                return Response({"detail": "Trainer not found."}, status=404)
+                
+            if not _has_active_assignment(user, target_user):
+                return Response({"detail": "No active assignment with this trainer."}, status=status.HTTP_403_FORBIDDEN)
+                
+            conversation, created = Conversation.objects.get_or_create(client=user, trainer=target_user)
+            
+        elif user.role == 'TRAINER':
+            client_id = request.data.get('client_id')
+            if not client_id:
+                return Response({"detail": "client_id is required."}, status=400)
+            try:
+                target_user = User.objects.get(id=client_id, role='CLIENT', is_active=True)
+            except User.DoesNotExist:
+                return Response({"detail": "Client not found."}, status=404)
+                
+            if not _has_active_assignment(target_user, user):
+                return Response({"detail": "No active assignment with this client."}, status=status.HTTP_403_FORBIDDEN)
+                
+            conversation, created = Conversation.objects.get_or_create(client=target_user, trainer=user)
+            
+        else:
+            return Response({"detail": "Invalid role."}, status=status.HTTP_403_FORBIDDEN)
 
-        trainer_id = request.data.get('trainer_id')
-        if not trainer_id:
-            return Response({"detail": "trainer_id is required."}, status=400)
-
-        try:
-            trainer = User.objects.get(id=trainer_id, role='TRAINER', is_active=True)
-        except User.DoesNotExist:
-            return Response({"detail": "Trainer not found."}, status=404)
-
-        # Security: verify active assignment
-        if not _has_active_assignment(user, trainer):
-            return Response(
-                {"detail": "You do not have an active assignment with this trainer."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
-        conversation, created = Conversation.objects.get_or_create(
-            client=user, trainer=trainer
-        )
         serializer = ConversationDetailSerializer(conversation, context={'request': request})
         return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
@@ -184,8 +195,39 @@ class MessageListCreateView(views.APIView):
         # Touch conversation updated_at
         conv.save(update_fields=['updated_at'])
 
+        # Broadcast to active WebSocket clients in real-time
+        try:
+            channel_layer = get_channel_layer()
+            if channel_layer:
+                async_to_sync(channel_layer.group_send)(
+                    f"chat_{conv.id}",
+                    {
+                        'type': 'chat_message',
+                        'id': msg.id,
+                        'sender_id': request.user.id,
+                        'content': msg.content,
+                        'created_at': msg.created_at.isoformat(),
+                        'file_url': msg.file.url if msg.file else None,
+                        'file_name': msg.file_name or '',
+                    }
+                )
+        except Exception:
+            pass
+
         serializer = MessageSerializer(msg, context={'request': request})
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class WebSocketTokenView(views.APIView):
+    """
+    GET /api/chat/ws-token/
+    Returns a valid JWT token string for authenticating WebSocket connections.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        token = str(AccessToken.for_user(request.user))
+        return Response({"token": token})
 
 
 # ── Reports ──────────────────────────────────────────────────────────────────
@@ -227,7 +269,7 @@ class ReportMessageView(views.APIView):
 # ── Admin ─────────────────────────────────────────────────────────────────────
 
 class AdminChatReportListView(generics.ListAPIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAuthenticated, IsAdmin]
     serializer_class = ChatReportSerializer
 
     def get_queryset(self):
@@ -241,7 +283,7 @@ class AdminChatReportListView(generics.ListAPIView):
 
 
 class AdminReviewReportView(views.APIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAuthenticated, IsAdmin]
 
     def post(self, request, pk):
         """Admin marks a report as REVIEWED or DISMISSED."""

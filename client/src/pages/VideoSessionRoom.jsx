@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { videoSessionsApi } from '../services/videoSessionsApi';
+import { confirmDialog, alertDialog } from '../components/ui/CustomAlert';
 import { 
   LiveKitRoom, 
   VideoConference, 
@@ -38,6 +39,7 @@ const VideoSessionRoom = () => {
   const navigate = useNavigate();
 
   const [preJoinComplete, setPreJoinComplete] = useState(false);
+  const [userChoices, setUserChoices] = useState({ videoEnabled: true, audioEnabled: true });
   const [sessionInfo, setSessionInfo] = useState(null);
   const [connectionDetails, setConnectionDetails] = useState(null);
   const [error, setError] = useState(null);
@@ -96,13 +98,23 @@ const VideoSessionRoom = () => {
   }, [preJoinComplete, sessionInfo?.status, isTrainer, sessionId, fetchSessionData, connectionDetails]);
 
   const handleEndSession = async () => {
-    if (window.confirm("Are you sure you want to end this session?")) {
+    const confirmed = await confirmDialog({
+      title: "End Video Session",
+      message: "Are you sure you want to end this video session? All participants will be disconnected.",
+      confirmText: "End Session",
+      variant: "danger",
+    });
+    if (confirmed) {
       try {
         await videoSessionsApi.endSession(sessionId);
         navigate(isTrainer ? '/trainer/sessions' : '/client/booking');
       } catch (err) {
         console.error(err);
-        alert("Failed to end session.");
+        alertDialog({
+          title: "Session Error",
+          message: "Failed to end session. Please try again.",
+          variant: "danger",
+        });
       }
     }
   };
@@ -153,6 +165,12 @@ const VideoSessionRoom = () => {
         <div className="max-w-2xl w-full bg-gray-800 rounded-xl overflow-hidden shadow-2xl p-6 livekit-prejoin-wrapper">
            <PreJoin 
              onSubmit={(values) => {
+               if (values) {
+                 setUserChoices({
+                   videoEnabled: values.videoEnabled ?? true,
+                   audioEnabled: values.audioEnabled ?? true,
+                 });
+               }
                setPreJoinComplete(true);
              }}
              onValidate={(values) => true}
@@ -215,12 +233,32 @@ const VideoSessionRoom = () => {
 
         {/* LiveKit Components */}
         <LiveKitRoom
-          video={true}
-          audio={true}
+          video={userChoices.videoEnabled}
+          audio={userChoices.audioEnabled}
+          connect={true}
           token={connectionDetails.token}
           serverUrl={connectionDetails.serverUrl || connectionDetails.server_url}
           onDisconnected={handleLeave}
+          onError={(e) => {
+            console.error("LiveKit Error:", e);
+            const msg = e?.message || "";
+            if (msg.toLowerCase().includes("permission") || msg.toLowerCase().includes("notallowed") || msg.toLowerCase().includes("device")) {
+              alertDialog({
+                title: "Camera / Microphone Access Blocked",
+                message: "Your browser or device blocked access to the camera or microphone. If you are testing both accounts on the same computer, your webcam is already in use by the other browser window. Turn off the camera on the preview screen to enter the room, or allow camera permissions in your browser URL bar.",
+                variant: "warning",
+              });
+            } else {
+              alertDialog({
+                title: "LiveKit Connection Error",
+                message: msg || "An unexpected error occurred while connecting to video.",
+                variant: "danger",
+              });
+            }
+          }}
           className="flex-1"
+          style={{ height: '100vh', width: '100vw' }}
+          data-lk-theme="default"
         >
           <VideoConference />
           <RoomAudioRenderer />

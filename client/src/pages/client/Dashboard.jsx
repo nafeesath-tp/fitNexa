@@ -10,6 +10,8 @@ import { useSubscriptionStore } from '../../stores/subscriptionStore';
 import { Bell, Weight, Ruler, User, Flame, ArrowUpRight, Dumbbell, Utensils } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Avatar from '../../components/ui/Avatar';
+import { chatApi } from '../../services/chatApi';
+import { useChatStore } from '../../stores/chatStore';
 
 export default function Dashboard() {
   const { user } = useAuthStore();
@@ -382,7 +384,20 @@ export default function Dashboard() {
                         <div className="text-xs text-gray-400">{assignedTrainer.specialization || 'Personal Trainer'}</div>
                       </div>
                     </div>
-                    <button className="bg-emerald-500/10 text-emerald-400 text-xs font-bold px-3 py-1.5 rounded-md hover:bg-emerald-500/20 transition-all border border-emerald-500/20">
+                    <button 
+                      onClick={async () => {
+                        try {
+                          const res = await chatApi.getOrCreateConversation(assignedTrainer.id);
+                          if (res) {
+                            useChatStore.getState().setActiveConversation(res.id);
+                            navigate('/client/chat');
+                          }
+                        } catch (error) {
+                          toast.error("Failed to start chat.");
+                        }
+                      }}
+                      className="bg-emerald-500/10 text-emerald-400 text-xs font-bold px-3 py-1.5 rounded-md hover:bg-emerald-500/20 transition-all border border-emerald-500/20"
+                    >
                       Chat
                     </button>
                   </div>

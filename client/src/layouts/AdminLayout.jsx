@@ -33,6 +33,7 @@ const AdminLayout = () => {
     { label: 'Trainers',      path: '/admin/trainers',        icon: UserCog         },
     { label: 'Specialisation',path: '/admin/specializations', icon: Briefcase       },
     { label: 'Subscriptions', path: '/admin/subscriptions',   icon: CreditCard      },
+    { label: 'Finance & Payouts', path: '/admin/finance',      icon: DollarSign      },
     { label: 'Content Library', path: '/admin/content',       icon: Video           },
     { label: 'Assignments',   path: '/admin/client-assignments', icon: UserCheck    },
     { label: 'Video Analytics', path: '/admin/video-analytics', icon: PlaySquare    },

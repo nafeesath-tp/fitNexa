@@ -11,8 +11,11 @@ class ClientProfileAdmin(admin.ModelAdmin):
         "gender",
         "fitness_goal",
         "experience_level",
+        "session_credits",
+        "group_session_credits",
         "created_at",
     ]
+    list_editable = ["session_credits", "group_session_credits"]
     list_filter = ["gender", "fitness_goal", "experience_level", "diet_preference"]
     search_fields = ["first_name", "last_name", "user__email"]
     readonly_fields = ["created_at", "updated_at"]

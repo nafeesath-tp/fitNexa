@@ -271,6 +271,8 @@ class ClientProfileSerializer(serializers.ModelSerializer):
             "diet_preference",
             "medical_condition",
             # Metadata
+            "session_credits",
+            "group_session_credits",
             "is_profile_completed",
             "created_at",
             "updated_at",

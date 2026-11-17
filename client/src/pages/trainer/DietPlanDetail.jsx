@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { confirmDialog } from "../../components/ui/CustomAlert";
 import { ArrowLeft, Plus, Trash2, ChevronDown, ChevronRight, Utensils, PlayCircle, Flame, Droplets, Sparkles } from "lucide-react";
 import { dietApi } from "../../services/dietApi";
 import Button from "../../components/ui/Button";
@@ -250,7 +251,13 @@ export default function DietPlanDetail() {
   };
 
   const handleDeleteWeek = async (weekId) => {
-    if (!window.confirm("Delete this entire week and all its days?")) return;
+    const confirmed = await confirmDialog({
+      title: "Delete Week",
+      message: "Are you sure you want to delete this entire week and all its days? This cannot be undone.",
+      confirmText: "Delete Week",
+      variant: "danger",
+    });
+    if (!confirmed) return;
     try {
       await dietApi.deleteWeek(planId, weekId);
       toast.success("Week removed.");
@@ -281,7 +288,13 @@ export default function DietPlanDetail() {
   };
 
   const handleDeleteDay = async (dayId) => {
-    if (!window.confirm("Delete this day and all its meals?")) return;
+    const confirmed = await confirmDialog({
+      title: "Delete Day",
+      message: "Are you sure you want to delete this day and all its meals? This cannot be undone.",
+      confirmText: "Delete Day",
+      variant: "danger",
+    });
+    if (!confirmed) return;
     try {
       await dietApi.deleteDay(planId, dayId);
       toast.success("Day removed.");

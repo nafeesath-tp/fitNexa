@@ -38,6 +38,7 @@ urlpatterns = [
     path('api/group-workouts/', include('group_workouts.urls')),
     path('api/video-sessions/', include('video_sessions.urls')),
     path('api/chat/', include('chat.urls')),
+    path('api/payments/', include('payments.urls')),
 ]
 
 if settings.DEBUG:

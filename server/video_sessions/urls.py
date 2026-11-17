@@ -16,6 +16,9 @@ urlpatterns = [
     path('<int:pk>/end/', VideoSessionEndView.as_view(), name='video-session-end'),
     path('<int:pk>/', VideoSessionDetailView.as_view(), name='video-session-detail'),
     
+    path('sessions/<str:room_name>/end/', VideoSessionEndView.as_view(), name='video-session-end'),
+    
+    # Admin endpoints
     path('admin/logs/', AdminVideoSessionLogsView.as_view(), name='video-session-admin-logs'),
     path('admin/analytics/', AdminVideoSessionAnalyticsView.as_view(), name='video-session-admin-analytics'),
 ]

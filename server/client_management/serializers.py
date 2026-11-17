@@ -38,6 +38,8 @@ class AdminClientAssignmentListSerializer(serializers.ModelSerializer):
     subscription_plan = serializers.SerializerMethodField()
     assigned_trainer = serializers.SerializerMethodField()
     is_assigned = serializers.SerializerMethodField()
+    session_credits = serializers.SerializerMethodField()
+    group_session_credits = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -51,6 +53,8 @@ class AdminClientAssignmentListSerializer(serializers.ModelSerializer):
             "subscription_plan",
             "assigned_trainer",
             "is_assigned",
+            "session_credits",
+            "group_session_credits",
             "created_at",
         ]
 
@@ -59,6 +63,12 @@ class AdminClientAssignmentListSerializer(serializers.ModelSerializer):
 
     def get_last_name(self, obj):
         return get_profile_attr(obj, "last_name", "")
+
+    def get_session_credits(self, obj):
+        return get_profile_attr(obj, "session_credits", 0)
+
+    def get_group_session_credits(self, obj):
+        return get_profile_attr(obj, "group_session_credits", 0)
 
     def get_phone_number(self, obj):
         return get_profile_attr(obj, "phone", "")

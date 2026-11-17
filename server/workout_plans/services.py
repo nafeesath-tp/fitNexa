@@ -104,6 +104,33 @@ def add_exercise(trainer_user, plan_id, day_id, data):
     }
 
 
+def update_exercise(trainer_user, plan_id, exercise_id, data):
+    """Updates an existing exercise."""
+    plan = get_object_or_404(WorkoutPlan, id=plan_id, trainer=trainer_user, is_active=True)
+    exercise = get_object_or_404(WorkoutExercise, id=exercise_id, day__week__plan=plan)
+
+    if "exercise_name" in data:
+        exercise.exercise_name = data["exercise_name"]
+    if "sets" in data:
+        exercise.sets = data["sets"]
+    if "reps" in data:
+        exercise.reps = data["reps"]
+    if "rest_seconds" in data:
+        exercise.rest_seconds = data["rest_seconds"]
+    if "notes" in data:
+        exercise.notes = data["notes"]
+        
+    exercise.save()
+
+    return {
+        "id": exercise.id,
+        "exercise_name": exercise.exercise_name,
+        "sets": exercise.sets,
+        "reps": exercise.reps,
+        "rest_seconds": exercise.rest_seconds,
+        "notes": exercise.notes,
+    }
+
 def delete_exercise(trainer_user, plan_id, exercise_id):
     """Removes an exercise by ID (hard delete — exercises are leaf nodes)."""
     plan = get_object_or_404(WorkoutPlan, id=plan_id, trainer=trainer_user, is_active=True)

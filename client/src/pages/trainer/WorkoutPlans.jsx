@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { confirmDialog } from "../../components/ui/CustomAlert";
 import { Plus, Dumbbell, Trash2, Eye, UserCheck, ChevronRight, Flame, Clock, Star } from "lucide-react";
 import { workoutApi } from "../../services/workoutApi";
 import { clientManagementApi } from "../../services/clientManagementApi";
@@ -72,7 +73,13 @@ export default function WorkoutPlans() {
   };
 
   const handleDelete = async (plan) => {
-    if (!window.confirm(`Delete "${plan.title}"? This cannot be undone.`)) return;
+    const confirmed = await confirmDialog({
+      title: "Delete Workout Plan",
+      message: `Are you sure you want to delete "${plan.title}"? This cannot be undone.`,
+      confirmText: "Delete Plan",
+      variant: "danger",
+    });
+    if (!confirmed) return;
     try {
       await workoutApi.deletePlan(plan.id);
       removeTrainerPlan(plan.id);

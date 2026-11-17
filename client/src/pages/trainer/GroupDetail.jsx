@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { confirmDialog } from "../../components/ui/CustomAlert";
 import { Users, UserPlus, X, Trash2, Dumbbell, Utensils, ArrowLeft } from "lucide-react";
 import { clientManagementApi } from "../../services/clientManagementApi";
 import { workoutApi } from "../../services/workoutApi";
@@ -71,7 +72,13 @@ const GroupDetail = () => {
   };
 
   const handleRemoveMember = async (taId) => {
-    if (!window.confirm("Are you sure you want to remove this client from the batch?")) return;
+    const confirmed = await confirmDialog({
+      title: "Remove Member",
+      message: "Are you sure you want to remove this client from the batch?",
+      confirmText: "Remove Client",
+      variant: "danger",
+    });
+    if (!confirmed) return;
     try {
       await clientManagementApi.removeGroupMember(id, taId);
       toast.success("Member removed.");

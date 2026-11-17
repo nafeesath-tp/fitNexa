@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import { CustomAlertContainer } from './components/ui/CustomAlert';
 import { useAuthStore } from './stores/authStore';
 import { authApi } from './services/auth/authApi';
 
@@ -42,15 +43,11 @@ import AdminClientAssignments from './pages/admin/ClientAssignments';
 import AdminVideoAnalytics from './pages/admin/VideoAnalytics';
 import TrainerMyClients from './pages/trainer/MyClients';
 import TrainerClientDetail from './pages/trainer/ClientDetail';
-import TrainerWorkoutPlans from './pages/trainer/WorkoutPlans';
-import TrainerWorkoutPlanDetail from './pages/trainer/WorkoutPlanDetail';
 import ClientBooking from './pages/client/ClientBooking';
 import MyWorkout from './pages/client/MyWorkout';
 import MyDiet from './pages/client/MyDiet';
 import AiPlan from './pages/client/AiPlan';
 import SubscriptionHistory from './pages/client/SubscriptionHistory';
-import TrainerDietPlans from './pages/trainer/DietPlans';
-import TrainerDietPlanDetail from './pages/trainer/DietPlanDetail';
 import TrainerGroups from './pages/trainer/Groups';
 import TrainerGroupDetail from './pages/trainer/GroupDetail';
 import TrainerAiPlansReview from './pages/trainer/AiPlansReview';
@@ -62,6 +59,8 @@ import ClientGroupWorkouts from './pages/client/ClientGroupWorkouts';
 import VideoSessionRoom from './pages/VideoSessionRoom';
 import Chat from './pages/Chat';
 import AdminChatReports from './pages/admin/AdminChatReports';
+import TrainerEarnings from './pages/trainer/TrainerEarnings';
+import AdminFinance from './pages/admin/AdminFinance';
 
 // --- Placeholder Pages (To be built later) ---
 const Placeholder = ({ title }) => <div><h2>{title} Page</h2></div>;
@@ -96,6 +95,7 @@ function App() {
   return (
     <BrowserRouter>
       <Toaster position="top-right" />
+      <CustomAlertContainer />
       <Routes>
         
         {/* PUBLIC ROUTES (Logged out users only) */}
@@ -144,15 +144,12 @@ function App() {
             <Route path="clients/:id" element={<TrainerClientDetail />} />
             <Route path="groups" element={<TrainerGroups />} />
             <Route path="groups/:id" element={<TrainerGroupDetail />} />
-            <Route path="workout-plans" element={<TrainerWorkoutPlans />} />
-            <Route path="workout-plans/:planId" element={<TrainerWorkoutPlanDetail />} />
-            <Route path="diet-plans" element={<TrainerDietPlans />} />
-            <Route path="diet-plans/:planId" element={<TrainerDietPlanDetail />} />
             <Route path="ai-plans" element={<TrainerAiPlansReview />} />
             <Route path="ai-plans/:id" element={<TrainerAiPlanReviewDetail />} />
             <Route path="slots" element={<TrainerSlots />} />
             <Route path="sessions" element={<TrainerSessions />} />
             <Route path="group-workouts" element={<TrainerGroupWorkouts />} />
+            <Route path="earnings"       element={<TrainerEarnings />} />
             <Route path="chat"           element={<Chat />} />
           </Route>
         </Route>
@@ -165,6 +162,7 @@ function App() {
             <Route path="clients" element={<AdminClients />} />
             <Route path="specializations" element={<AdminSpecializations />} />
             <Route path="subscriptions" element={<AdminSubscriptions />} />
+            <Route path="finance"       element={<AdminFinance />} />
             <Route path="content" element={<AdminContent />} />
             <Route path="client-assignments" element={<AdminClientAssignments />} />
             <Route path="video-analytics"    element={<AdminVideoAnalytics />} />

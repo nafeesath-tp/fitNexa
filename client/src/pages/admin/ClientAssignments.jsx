@@ -162,6 +162,32 @@ const ClientAssignments = () => {
       },
     },
     {
+      header: "Credits",
+      accessor: "session_credits",
+      render: (row) => (
+        <div className="flex items-center gap-2">
+          <span className="font-bold text-white bg-primary/20 text-primary px-3 py-1 rounded-lg">
+            {row.session_credits || 0}
+          </span>
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              const newCredits = prompt(`Enter new session credits for ${row.email}:`, row.session_credits || 0);
+              if(newCredits !== null && !isNaN(newCredits)) {
+                clientManagementApi.updateSessionCredits(row.id, parseInt(newCredits)).then(() => {
+                  toast.success("Credits updated successfully");
+                  fetchAssignments();
+                }).catch(() => toast.error("Failed to update credits"));
+              }
+            }}
+            className="text-xs text-gray-400 hover:text-white underline cursor-pointer"
+          >
+            Edit
+          </button>
+        </div>
+      ),
+    },
+    {
       header: "Status",
       accessor: "is_assigned",
       render: (row) => (

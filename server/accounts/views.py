@@ -14,6 +14,7 @@ from .models import Specialization, TrainerProfile
 
 class PublicSpecializationListAPIView(APIView):
     permission_classes = [AllowAny]
+    authentication_classes = []
     def get(self, request):
         specializations = Specialization.objects.filter(is_active=True)
         serializer = PublicSpecializationSerializer(specializations, many=True)
@@ -26,6 +27,7 @@ class PublicSpecializationListAPIView(APIView):
 class SignupAPIView(APIView):
 
     permission_classes = [AllowAny]
+    authentication_classes = []
 
     def post(self, request):
 
@@ -74,6 +76,7 @@ class SignupAPIView(APIView):
 class VerifyOTPAPIView(APIView):
 
     permission_classes = [AllowAny]
+    authentication_classes = []
 
     def post(self, request):
         serializer = VerifyOTPSerializer(data=request.data)
@@ -112,6 +115,7 @@ class VerifyOTPAPIView(APIView):
 class ResendOTPAPIView(APIView):
 
     permission_classes = [AllowAny]
+    authentication_classes = []
 
     def post(self, request):
         serializer = ResendOTPSerializer(data=request.data)
@@ -159,6 +163,7 @@ class ResendOTPAPIView(APIView):
 class LoginAPIView(APIView):
 
     permission_classes = [AllowAny]
+    authentication_classes = []
 
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
@@ -248,6 +253,7 @@ class LogoutAPIView(APIView):
 class ForgotPasswordAPIView(APIView):
 
     permission_classes = [AllowAny]
+    authentication_classes = []
 
     def post(self, request):
         serializer = ForgotPasswordSerializer(data=request.data)
@@ -281,6 +287,7 @@ class ForgotPasswordAPIView(APIView):
 class VerifyResetOTPAPIView(APIView):
 
     permission_classes = [AllowAny]
+    authentication_classes = []
 
     def post(self, request):
         serializer = VerifyResetOTPSerializer(data=request.data)
@@ -319,6 +326,7 @@ class VerifyResetOTPAPIView(APIView):
 class ResetPasswordAPIView(APIView):
 
     permission_classes = [AllowAny]
+    authentication_classes = []
 
     def post(self, request):
         # OTP is passed alongside new password for atomic verification + reset
@@ -388,6 +396,7 @@ class MeAPIView(APIView):
     def get(self, request):
         user = request.user
         data = {
+            "id": user.id,
             "email": user.email,
             "role": user.role,
         }
@@ -451,6 +460,7 @@ class TokenRefreshAPIView(APIView):
     axios interceptor when a 401 is received.
     """
     permission_classes = [AllowAny]
+    authentication_classes = []
 
     def post(self, request):
         refresh_token = request.COOKIES.get("refresh_token")
@@ -507,6 +517,7 @@ class GoogleAuthAPIView(APIView):
     the email login endpoint so that getHomeRoute() works identically.
     """
     permission_classes = [AllowAny]
+    authentication_classes = []
 
     def post(self, request):
         token = request.data.get('id_token')
@@ -527,6 +538,7 @@ class GoogleAuthAPIView(APIView):
                 tokens = get_tokens_for_user(user)
 
                 response_data = {
+                    "id": user.id,
                     "email": user.email,
                     "role":  user.role,
                 }
@@ -609,6 +621,7 @@ class GoogleSignupAPIView(APIView):
     - Returns HttpOnly JWT cookies and user data.
     """
     permission_classes = [AllowAny]
+    authentication_classes = []
 
     def post(self, request):
         token = request.data.get('id_token')

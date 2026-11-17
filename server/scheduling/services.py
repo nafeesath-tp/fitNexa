@@ -7,20 +7,18 @@ from client_management.models import TrainerAssignment
 def generate_slots_for_trainer(trainer, start_date, end_date):
     """
     Generates bookable slots for the trainer between start_date and end_date.
-    Only generates complete session_duration intervals.
-    Skips blocked dates.
-    Ignores existing slots.
+    Only generates complete session_duration intervals for configured availabilities.
+    Cleans up stale unbooked slots that do not match current availability or duration.
+    Preserves all BOOKED slots.
     """
     try:
         settings = TrainerSchedulingSettings.objects.get(trainer=trainer)
         duration_minutes = settings.session_duration
     except TrainerSchedulingSettings.DoesNotExist:
-        # Default to 60 mins if no settings configured
         duration_minutes = 60
 
     availabilities = TrainerAvailability.objects.filter(trainer=trainer, is_available=True)
-    if not availabilities.exists():
-        return 0  # No availabilities set
+    available_days_of_week = set(availabilities.values_list('day_of_week', flat=True))
 
     blocked_dates = set(BlockedDate.objects.filter(
         trainer=trainer,
@@ -32,40 +30,64 @@ def generate_slots_for_trainer(trainer, start_date, end_date):
     slots_created = 0
 
     while current_date <= end_date:
-        if current_date in blocked_dates:
+        day_of_week = current_date.weekday() # 0 = Monday, 6 = Sunday
+
+        # If date is blocked or trainer has NO availability for this day of week:
+        if current_date in blocked_dates or day_of_week not in available_days_of_week:
+            # Delete any unbooked AVAILABLE slots on this date
+            TrainerSlot.objects.filter(
+                trainer=trainer,
+                date=current_date,
+                status=TrainerSlot.Status.AVAILABLE
+            ).delete()
             current_date += timedelta(days=1)
             continue
 
-        day_of_week = current_date.weekday() # 0 = Monday, 6 = Sunday
         daily_availabilities = availabilities.filter(day_of_week=day_of_week)
 
+        # Calculate exact valid slot intervals for this day
+        valid_intervals = []
         for avail in daily_availabilities:
-            # Create datetime objects for easy math
             start_dt = datetime.combine(current_date, avail.start_time)
             end_dt = datetime.combine(current_date, avail.end_time)
-            
             current_slot_start = start_dt
-            
             while current_slot_start + timedelta(minutes=duration_minutes) <= end_dt:
                 current_slot_end = current_slot_start + timedelta(minutes=duration_minutes)
-                
-                try:
-                    # Use get_or_create to silently ignore existing slots
-                    obj, created = TrainerSlot.objects.get_or_create(
-                        trainer=trainer,
-                        date=current_date,
-                        start_time=current_slot_start.time(),
-                        defaults={
-                            'end_time': current_slot_end.time(),
-                            'status': TrainerSlot.Status.AVAILABLE
-                        }
-                    )
-                    if created:
-                        slots_created += 1
-                except IntegrityError:
-                    pass # Handled by UniqueConstraint just in case
-                
+                valid_intervals.append((current_slot_start.time(), current_slot_end.time()))
                 current_slot_start = current_slot_end
+
+        valid_start_times = {st for st, et in valid_intervals}
+
+        # Remove unbooked AVAILABLE slots on this date that don't match the valid start times
+        TrainerSlot.objects.filter(
+            trainer=trainer,
+            date=current_date,
+            status=TrainerSlot.Status.AVAILABLE
+        ).exclude(start_time__in=valid_start_times).delete()
+
+        # Update end_time on any existing slot that has the correct start_time but outdated end_time
+        for s in TrainerSlot.objects.filter(trainer=trainer, date=current_date, status=TrainerSlot.Status.AVAILABLE):
+            for valid_start, valid_end in valid_intervals:
+                if s.start_time == valid_start and s.end_time != valid_end:
+                    s.end_time = valid_end
+                    s.save(update_fields=['end_time'])
+
+        # Create missing slots for valid intervals
+        for slot_start_time, slot_end_time in valid_intervals:
+            try:
+                obj, created = TrainerSlot.objects.get_or_create(
+                    trainer=trainer,
+                    date=current_date,
+                    start_time=slot_start_time,
+                    defaults={
+                        'end_time': slot_end_time,
+                        'status': TrainerSlot.Status.AVAILABLE
+                    }
+                )
+                if created:
+                    slots_created += 1
+            except IntegrityError:
+                pass
 
         current_date += timedelta(days=1)
 
@@ -129,6 +151,9 @@ def _verify_no_overlap(client, date, start_time, end_time, exclude_session_id=No
 
 def book_session(client, slot_id, notes=""):
     with transaction.atomic():
+        from client.models import ClientProfile
+        profile = ClientProfile.objects.select_for_update().get(user=client)
+
         try:
             slot = TrainerSlot.objects.select_for_update().get(id=slot_id)
         except TrainerSlot.DoesNotExist:
@@ -139,6 +164,45 @@ def book_session(client, slot_id, notes=""):
             
         _verify_assignment(client, slot.trainer)
         _verify_no_overlap(client, slot.date, slot.start_time, slot.end_time)
+
+        # Verify active, unexpired Premium subscription before booking
+        from subscriptions.models import ClientSubscription, SubscriptionPlan
+        from django.db.models import Q
+        active_sub = (
+            ClientSubscription.objects
+            .select_related("plan")
+            .filter(
+                client=client,
+                payment_status=ClientSubscription.PaymentStatus.ACTIVE,
+                plan__name=SubscriptionPlan.PlanName.PREMIUM,
+            )
+            .filter(
+                Q(expires_at__isnull=True) | Q(expires_at__gt=timezone.now())
+            )
+            .first()
+        )
+        if not active_sub:
+            raise ValueError("An active, unexpired Premium subscription is required to book personal training sessions.")
+
+        # Release any due 28-day period credits on yearly subscriptions
+        from payments.services import check_and_allocate_period_credits, record_session_credit_consumption
+        check_and_allocate_period_credits(client)
+
+        profile.refresh_from_db()
+        if profile.session_credits <= 0:
+            raise ValueError("You do not have any session credits available.")
+            
+        # Check weekly limit (max 4 per week)
+        target_year, target_week, _ = slot.date.isocalendar()
+        weekly_sessions_count = PersonalTrainingSession.objects.filter(
+            client=client,
+            date__iso_year=target_year,
+            date__week=target_week,
+            status__in=[PersonalTrainingSession.Status.BOOKED, PersonalTrainingSession.Status.RESCHEDULED, PersonalTrainingSession.Status.COMPLETED]
+        ).count()
+        
+        if weekly_sessions_count >= 4:
+            raise ValueError("You can only book up to 4 sessions per week.")
 
         session = PersonalTrainingSession.objects.create(
             client=client,
@@ -153,7 +217,12 @@ def book_session(client, slot_id, notes=""):
         
         slot.status = TrainerSlot.Status.BOOKED
         slot.save(update_fields=['status'])
-        
+
+        # Deduct credit and record in SubscriptionCreditLedger atomically
+        profile.session_credits -= 1
+        profile.save(update_fields=['session_credits'])
+        record_session_credit_consumption(client=client, session=session, session_type="PERSONAL")
+
         return session
 
 def reschedule_session(client, session_id, new_slot_id):
@@ -222,6 +291,33 @@ def cancel_session(user, session_id, is_trainer=False):
         session.status = PersonalTrainingSession.Status.CANCELLED
         session.save(update_fields=['status'])
         
+        now = timezone.now()
+        session_start_dt = datetime.combine(session.date, session.start_time)
+        if timezone.is_aware(now):
+            session_start_dt = timezone.make_aware(session_start_dt, timezone.get_current_timezone())
+
+        is_early_cancellation = (now < session_start_dt)
+
+        from payments.services import (
+            record_session_credit_restoration,
+            process_personal_session_late_cancellation,
+        )
+
+        if is_trainer or is_early_cancellation:
+            # Refund credit and record in SubscriptionCreditLedger atomically
+            profile = session.client.client_profile
+            profile.session_credits += 1
+            profile.save(update_fields=['session_credits'])
+            reason = (
+                f"Session #{session.id} cancelled by trainer {user.email}"
+                if is_trainer
+                else f"Early cancellation for Session #{session.id}"
+            )
+            record_session_credit_restoration(client=session.client, session=session, session_type="PERSONAL", reason=reason)
+        else:
+            # Late cancellation: credit is consumed, trainer receives 80% share
+            process_personal_session_late_cancellation(session)
+
         return session
 
 def complete_session(trainer, session_id):
@@ -237,6 +333,46 @@ def complete_session(trainer, session_id):
         session.status = PersonalTrainingSession.Status.COMPLETED
         session.completed_at = timezone.now()
         session.save(update_fields=['status', 'completed_at'])
+
+        from payments.services import process_personal_session_completion
+        process_personal_session_completion(session)
         
+        return session
+
+def record_client_no_show(trainer, session_id):
+    """
+    Phase 3: Trainer records client no-show.
+    Slot is freed, credit is consumed, and trainer receives 80% compensation.
+    Cannot mark a future session as no-show.
+    """
+    with transaction.atomic():
+        try:
+            session = PersonalTrainingSession.objects.select_for_update().get(id=session_id, trainer=trainer)
+        except PersonalTrainingSession.DoesNotExist:
+            raise ValueError("Session not found.")
+
+        if session.status not in [PersonalTrainingSession.Status.BOOKED, PersonalTrainingSession.Status.RESCHEDULED]:
+            raise ValueError("Session is not active.")
+
+        now = timezone.now()
+        from datetime import datetime
+        session_start_dt = datetime.combine(session.date, session.start_time)
+        if timezone.is_aware(now):
+            session_start_dt = timezone.make_aware(session_start_dt, timezone.get_current_timezone())
+
+        if now < session_start_dt:
+            raise ValueError("Cannot mark a future session as no-show.")
+
+        if slot:
+            slot.status = TrainerSlot.Status.AVAILABLE
+            slot.save(update_fields=['status'])
+
+        session.status = PersonalTrainingSession.Status.NO_SHOW
+        session.notes = (session.notes + " Client marked as no-show.").strip()
+        session.save(update_fields=['status', 'notes'])
+
+        from payments.services import process_personal_session_no_show
+        process_personal_session_no_show(session)
+
         return session
 

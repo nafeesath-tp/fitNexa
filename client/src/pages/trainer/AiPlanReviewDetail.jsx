@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { aiPlansApi } from '../../services/aiPlansApi';
-import { Sparkles, CheckCircle2, XCircle, ChevronLeft, Dumbbell, Utensils, RefreshCw, CalendarDays } from 'lucide-react';
+import { workoutApi } from '../../services/workoutApi';
+import { dietApi } from '../../services/dietApi';
+import { CheckCircle2, XCircle, ChevronLeft, Dumbbell, Utensils, RefreshCw, CalendarDays, Pencil, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { cn } from '../../utils/cn';
+import { confirmDialog } from '../../components/ui/CustomAlert';
 
 export default function AiPlanReviewDetail() {
   const { id } = useParams();
@@ -11,6 +14,10 @@ export default function AiPlanReviewDetail() {
   const [plan, setPlan] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('workout');
+  
+  // Edit State
+  const [editingExercise, setEditingExercise] = useState(null);
+  const [editingMeal, setEditingMeal] = useState(null);
 
   useEffect(() => {
     fetchPlanDetail();
@@ -45,12 +52,17 @@ export default function AiPlanReviewDetail() {
   };
 
   const handleRegenerate = async () => {
-    if (!window.confirm("Are you sure you want to discard this plan and regenerate?")) return;
+    const confirmed = await confirmDialog({
+      title: "Discard and Regenerate Plan",
+      message: "Are you sure you want to discard this plan and regenerate a new one? Current modifications will be lost.",
+      confirmText: "Regenerate Plan",
+      variant: "warning",
+    });
+    if (!confirmed) return;
     try {
-      const toastId = toast.loading("Requesting regeneration...");
       const res = await aiPlansApi.regeneratePlan(id);
       if (res.success) {
-        toast.success(res.message, { id: toastId });
+        toast.success(res.message || "New AI plan generation has started in the background.");
         navigate('/trainer/ai-plans');
       }
     } catch (error) {
@@ -58,19 +70,77 @@ export default function AiPlanReviewDetail() {
     }
   };
 
-  const handleNextWeek = async () => {
+  // ── Handlers for Exercises ───────────────────────────────────────────────
+  const handleDeleteExercise = async (planId, exerciseId) => {
+    const confirmed = await confirmDialog({
+      title: "Remove Exercise",
+      message: "Are you sure you want to remove this exercise?",
+      confirmText: "Remove",
+      variant: "danger",
+    });
+    if (!confirmed) return;
     try {
-      const toastId = toast.loading("Generating Next Week's plan...");
-      const res = await aiPlansApi.generateNextWeek(id);
+      const toastId = toast.loading("Removing exercise...");
+      const res = await workoutApi.deleteExercise(planId, exerciseId);
       if (res.success) {
-        toast.success(res.message, { id: toastId });
-        navigate(`/trainer/ai-plans/${res.request_id}`);
+        toast.success("Exercise removed", { id: toastId });
+        fetchPlanDetail();
       }
     } catch (error) {
-      toast.error(error.response?.data?.detail || "Failed to generate next week");
+      toast.error(error.response?.data?.detail || "Failed to remove exercise");
     }
   };
 
+  const handleUpdateExercise = async (e) => {
+    e.preventDefault();
+    try {
+      const toastId = toast.loading("Saving exercise...");
+      const res = await workoutApi.updateExercise(plan.workout_plan.id, editingExercise.id, editingExercise);
+      if (res.success) {
+        toast.success("Exercise updated", { id: toastId });
+        setEditingExercise(null);
+        fetchPlanDetail();
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to update exercise");
+    }
+  };
+
+  // ── Handlers for Meals ───────────────────────────────────────────────────
+  const handleDeleteMeal = async (planId, mealId) => {
+    const confirmed = await confirmDialog({
+      title: "Remove Meal",
+      message: "Are you sure you want to remove this meal?",
+      confirmText: "Remove",
+      variant: "danger",
+    });
+    if (!confirmed) return;
+    try {
+      const toastId = toast.loading("Removing meal...");
+      const res = await dietApi.deleteMeal(planId, mealId);
+      if (res.success) {
+        toast.success("Meal removed", { id: toastId });
+        fetchPlanDetail();
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to remove meal");
+    }
+  };
+
+  const handleUpdateMeal = async (e) => {
+    e.preventDefault();
+    try {
+      const toastId = toast.loading("Saving meal...");
+      const res = await dietApi.updateMeal(plan.diet_plan.id, editingMeal.id, editingMeal);
+      if (res.success) {
+        toast.success("Meal updated", { id: toastId });
+        setEditingMeal(null);
+        fetchPlanDetail();
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to update meal");
+    }
+  };
   if (loading || !plan) {
     return <div className="flex justify-center items-center h-64"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>;
   }
@@ -122,15 +192,6 @@ export default function AiPlanReviewDetail() {
                 <CheckCircle2 className="w-5 h-5" /> Approve & Assign
               </button>
             </>
-          )}
-
-          {plan.status === 'ASSIGNED' && (
-            <button 
-              onClick={handleNextWeek}
-              className="flex items-center gap-2 px-6 py-2 bg-primary hover:bg-primary/90 text-background rounded-lg text-sm font-bold transition-all shadow-lg shadow-primary/20"
-            >
-              <Sparkles className="w-5 h-5" /> Generate Week {plan.week_number + 1}
-            </button>
           )}
         </div>
       </div>
@@ -216,6 +277,7 @@ export default function AiPlanReviewDetail() {
                           <th className="p-3 font-medium">Sets × Reps</th>
                           <th className="p-3 font-medium">Rest</th>
                           <th className="p-3 font-medium">Notes</th>
+                          <th className="p-3 font-medium text-right">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border">
@@ -225,6 +287,10 @@ export default function AiPlanReviewDetail() {
                             <td className="p-3 text-primary">{ex.sets} × {ex.reps}</td>
                             <td className="p-3 text-gray-400">{ex.rest_seconds}s</td>
                             <td className="p-3 text-gray-400 text-xs">{ex.notes}</td>
+                            <td className="p-3 text-right">
+                              <button onClick={() => setEditingExercise(ex)} className="text-gray-400 hover:text-white mr-3"><Pencil className="w-4 h-4" /></button>
+                              <button onClick={() => handleDeleteExercise(wPlan.id, ex.id)} className="text-red-400 hover:text-red-300"><Trash2 className="w-4 h-4" /></button>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -259,7 +325,11 @@ export default function AiPlanReviewDetail() {
                   {day.meals?.map(meal => (
                     <div key={meal.id} className="p-4 hover:bg-white/5 transition-colors">
                       <div className="flex justify-between items-start mb-2">
-                        <h5 className="font-bold text-primary text-sm uppercase">{meal.meal_type.replace('_', ' ')}</h5>
+                        <div className="flex items-center gap-2">
+                          <h5 className="font-bold text-primary text-sm uppercase">{meal.meal_type.replace('_', ' ')}</h5>
+                          <button onClick={() => setEditingMeal(meal)} className="text-gray-400 hover:text-white ml-2"><Pencil className="w-3.5 h-3.5" /></button>
+                          <button onClick={() => handleDeleteMeal(dPlan.id, meal.id)} className="text-red-400 hover:text-red-300"><Trash2 className="w-3.5 h-3.5" /></button>
+                        </div>
                         <div className="flex gap-3 text-xs">
                           <span className="text-gray-300"><span className="text-gray-500">P:</span> {meal.protein_g}g</span>
                           <span className="text-gray-300"><span className="text-gray-500">C:</span> {meal.carbs_g}g</span>
@@ -277,6 +347,84 @@ export default function AiPlanReviewDetail() {
           </div>
         )}
       </div>
+
+      {/* Exercise Edit Modal */}
+      {editingExercise && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-card border border-border rounded-xl p-6 w-full max-w-md shadow-2xl">
+            <h3 className="text-xl font-bold text-white mb-4">Edit Exercise</h3>
+            <form onSubmit={handleUpdateExercise} className="space-y-4">
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Exercise Name</label>
+                <input required type="text" value={editingExercise.exercise_name} onChange={e => setEditingExercise({...editingExercise, exercise_name: e.target.value})} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-white" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Sets</label>
+                  <input required type="number" value={editingExercise.sets} onChange={e => setEditingExercise({...editingExercise, sets: e.target.value})} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-white" />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Reps</label>
+                  <input required type="text" value={editingExercise.reps} onChange={e => setEditingExercise({...editingExercise, reps: e.target.value})} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-white" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Rest (seconds)</label>
+                <input required type="number" value={editingExercise.rest_seconds} onChange={e => setEditingExercise({...editingExercise, rest_seconds: e.target.value})} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-white" />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Notes</label>
+                <textarea rows={3} value={editingExercise.notes} onChange={e => setEditingExercise({...editingExercise, notes: e.target.value})} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-white"></textarea>
+              </div>
+              <div className="flex justify-end gap-3 mt-6">
+                <button type="button" onClick={() => setEditingExercise(null)} className="px-4 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white transition-colors">Cancel</button>
+                <button type="submit" className="px-4 py-2 bg-primary hover:bg-primary/90 text-background rounded-lg text-sm font-bold transition-all">Save Changes</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Meal Edit Modal */}
+      {editingMeal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-card border border-border rounded-xl p-6 w-full max-w-md shadow-2xl">
+            <h3 className="text-xl font-bold text-white mb-4">Edit Meal</h3>
+            <form onSubmit={handleUpdateMeal} className="space-y-4">
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Description</label>
+                <input required type="text" value={editingMeal.items_description} onChange={e => setEditingMeal({...editingMeal, items_description: e.target.value})} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-white" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Calories</label>
+                  <input required type="number" value={editingMeal.calories} onChange={e => setEditingMeal({...editingMeal, calories: e.target.value})} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-white" />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Protein (g)</label>
+                  <input type="number" value={editingMeal.protein_g} onChange={e => setEditingMeal({...editingMeal, protein_g: e.target.value})} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-white" />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Carbs (g)</label>
+                  <input type="number" value={editingMeal.carbs_g} onChange={e => setEditingMeal({...editingMeal, carbs_g: e.target.value})} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-white" />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Fats (g)</label>
+                  <input type="number" value={editingMeal.fats_g} onChange={e => setEditingMeal({...editingMeal, fats_g: e.target.value})} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-white" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Notes</label>
+                <input type="text" value={editingMeal.notes || ''} onChange={e => setEditingMeal({...editingMeal, notes: e.target.value})} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-white" />
+              </div>
+              <div className="flex justify-end gap-3 mt-6">
+                <button type="button" onClick={() => setEditingMeal(null)} className="px-4 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white transition-colors">Cancel</button>
+                <button type="submit" className="px-4 py-2 bg-primary hover:bg-primary/90 text-background rounded-lg text-sm font-bold transition-all">Save Changes</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

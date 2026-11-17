@@ -3,6 +3,7 @@ from .views import (
     AdminClientAssignmentListAPIView,
     AdminAssignTrainerAPIView,
     AdminReassignTrainerAPIView,
+    AdminUpdateSessionCreditsAPIView,
     TrainerAssignedClientListAPIView,
     TrainerAssignedClientDetailAPIView,
     ClientAssignedTrainerAPIView,
@@ -20,6 +21,7 @@ urlpatterns = [
     path("admin/assignments/", AdminClientAssignmentListAPIView.as_view(), name="admin-client-assignments"),
     path("admin/assign/", AdminAssignTrainerAPIView.as_view(), name="admin-assign-trainer"),
     path("admin/reassign/<int:client_id>/", AdminReassignTrainerAPIView.as_view(), name="admin-reassign-trainer"),
+    path("admin/credits/<int:client_id>/", AdminUpdateSessionCreditsAPIView.as_view(), name="admin-update-credits"),
 
     # ── Trainer Endpoints ────────────────────────────────────────────────────
     path("trainer/my-clients/", TrainerAssignedClientListAPIView.as_view(), name="trainer-my-clients"),

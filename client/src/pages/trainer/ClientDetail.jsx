@@ -225,31 +225,7 @@ const ClientDetail = () => {
               </div>
             </div>
 
-            {/* Readiness Box */}
-            <div className="bg-gradient-to-br from-[#163829] to-[#0f241a] border border-emerald-500/30 rounded-2xl p-6 space-y-3">
-              <h4 className="font-bold text-white text-base">Ready for Action</h4>
-              <p className="text-xs text-gray-300 leading-relaxed">
-                With this client successfully assigned to you, you can now seamlessly construct custom workout routines and daily nutrition macros tailored to their BMI ({client.bmi || "N/A"}) and goal ({client.fitness_goal || "General Fitness"}).
-              </p>
-              <div className="pt-2 flex flex-col gap-2">
-                <Button
-                  size="sm"
-                  variant="primary"
-                  onClick={() => navigate("/trainer/workout-plans")}
-                  className="w-full justify-center text-xs"
-                >
-                  Create Workout Plan →
-                </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => navigate("/trainer/diet-plans")}
-                  className="w-full justify-center text-xs border-emerald-500/30"
-                >
-                  Create Diet Plan →
-                </Button>
-              </div>
-            </div>
+
           </div>
         </div>
       )}
@@ -264,23 +240,23 @@ const ClientDetail = () => {
             <>
               <h3 className="text-xl font-bold text-emerald-400">Workout Plan Assigned ✓</h3>
               <p className="text-sm text-gray-300 max-w-lg mx-auto">
-                You have successfully assigned a workout plan to <strong>{name}</strong>. They can now access and track it from their client dashboard.
+                An AI-generated workout plan has been assigned to <strong>{name}</strong>. They can now access and track it from their client dashboard.
               </p>
               <div className="pt-2 flex justify-center">
-                <Button variant="secondary" onClick={() => navigate("/trainer/workout-plans")} className="flex items-center gap-2">
-                  <Dumbbell className="w-4 h-4" /> Manage Workout Plans
+                <Button variant="secondary" onClick={() => navigate("/trainer/ai-plans")} className="flex items-center gap-2">
+                  <Dumbbell className="w-4 h-4" /> View AI Plans
                 </Button>
               </div>
             </>
           ) : (
             <>
-              <h3 className="text-xl font-bold text-white">Workout Plan Management</h3>
+              <h3 className="text-xl font-bold text-white">Workout Plan — AI Generated</h3>
               <p className="text-sm text-gray-400 max-w-lg mx-auto">
-                You can create, customize, and assign multi-week workout programs with exercises, sets, reps, and video tutorials directly to <strong>{name}</strong>.
+                Workout plans for <strong>{name}</strong> are generated using AI and assigned after your review. Go to AI Plans to review and approve pending plans.
               </p>
               <div className="pt-2 flex justify-center">
-                <Button variant="primary" onClick={() => navigate("/trainer/workout-plans")} className="flex items-center gap-2">
-                  <Dumbbell className="w-4 h-4" /> Go to Workout Plan Builder →
+                <Button variant="primary" onClick={() => navigate("/trainer/ai-plans")} className="flex items-center gap-2">
+                  <Dumbbell className="w-4 h-4" /> Go to AI Plans →
                 </Button>
               </div>
             </>
@@ -298,23 +274,23 @@ const ClientDetail = () => {
             <>
               <h3 className="text-xl font-bold text-emerald-400">Diet Plan Assigned ✓</h3>
               <p className="text-sm text-gray-300 max-w-lg mx-auto">
-                You have successfully assigned a diet & nutrition plan to <strong>{name}</strong>. They can now access and track it from their client dashboard.
+                An AI-generated diet & nutrition plan has been assigned to <strong>{name}</strong>. They can now access and track it from their client dashboard.
               </p>
               <div className="pt-2 flex justify-center">
-                <Button variant="secondary" onClick={() => navigate("/trainer/diet-plans")} className="flex items-center gap-2">
-                  <Utensils className="w-4 h-4" /> Manage Diet Plans
+                <Button variant="secondary" onClick={() => navigate("/trainer/ai-plans")} className="flex items-center gap-2">
+                  <Utensils className="w-4 h-4" /> View AI Plans
                 </Button>
               </div>
             </>
           ) : (
             <>
-              <h3 className="text-xl font-bold text-white">Diet & Nutrition Planning</h3>
+              <h3 className="text-xl font-bold text-white">Diet & Nutrition — AI Generated</h3>
               <p className="text-sm text-gray-400 max-w-lg mx-auto">
-                You can create, customize, and assign multi-week calorie and macronutrient targeted diet programs with meal schedules directly to <strong>{name}</strong>.
+                Diet plans for <strong>{name}</strong> are generated using AI and assigned after your review. Go to AI Plans to review and approve pending plans.
               </p>
               <div className="pt-2 flex justify-center">
-                <Button variant="primary" onClick={() => navigate("/trainer/diet-plans")} className="flex items-center gap-2">
-                  <Utensils className="w-4 h-4" /> Go to Diet Plan Builder →
+                <Button variant="primary" onClick={() => navigate("/trainer/ai-plans")} className="flex items-center gap-2">
+                  <Utensils className="w-4 h-4" /> Go to AI Plans →
                 </Button>
               </div>
             </>

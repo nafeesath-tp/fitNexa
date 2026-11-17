@@ -22,12 +22,16 @@ class CookieJWTAuthentication(JWTAuthentication):
 
         try:
             validated_token = self.get_validated_token(access_token)
-        except TokenError as e:
-            raise InvalidToken({"detail": "Access token is invalid or expired.", "code": str(e)})
+        except TokenError:
+            # If the cookie token is invalid or expired, treat as unauthenticated (None).
+            # Protected views will still reject with 401; public views won't be blocked.
+            return None
 
         try:
             user = self.get_user(validated_token)
         except AuthenticationFailed:
-            raise AuthenticationFailed({"detail": "User not found or inactive."})
+            # If the user no longer exists in the DB (e.g. DB reset) or is inactive,
+            # treat as unauthenticated so public views and login can proceed cleanly.
+            return None
 
         return (user, validated_token)

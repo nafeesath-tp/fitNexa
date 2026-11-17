@@ -98,16 +98,25 @@ class TrainerCompleteSessionView(views.APIView):
     permission_classes = [IsTrainer]
 
     def patch(self, request, session_id):
-        try:
-            session = GroupWorkoutSession.objects.get(id=session_id, group_workout__trainer=request.user)
-        except GroupWorkoutSession.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
+        from django.db import transaction
+        from payments.services import process_group_session_completion
 
-        if session.status != GroupWorkoutSession.Status.SCHEDULED:
-            return Response({'detail': 'Only scheduled sessions can be marked as completed.'}, status=status.HTTP_400_BAD_REQUEST)
+        with transaction.atomic():
+            try:
+                session = GroupWorkoutSession.objects.select_for_update().get(
+                    id=session_id, group_workout__trainer=request.user
+                )
+            except GroupWorkoutSession.DoesNotExist:
+                return Response(status=status.HTTP_404_NOT_FOUND)
 
-        session.status = GroupWorkoutSession.Status.COMPLETED
-        session.save(update_fields=['status'])
+            if session.status != GroupWorkoutSession.Status.SCHEDULED:
+                return Response({'detail': 'Only scheduled sessions can be marked as completed.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            session.status = GroupWorkoutSession.Status.COMPLETED
+            session.save(update_fields=['status'])
+
+            process_group_session_completion(session)
+
         return Response({'detail': 'Session marked as completed.'})
 
 
@@ -115,16 +124,25 @@ class TrainerCancelSessionView(views.APIView):
     permission_classes = [IsTrainer]
 
     def patch(self, request, session_id):
-        try:
-            session = GroupWorkoutSession.objects.get(id=session_id, group_workout__trainer=request.user)
-        except GroupWorkoutSession.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
+        from django.db import transaction
+        from payments.services import handle_group_session_cancellation
 
-        if session.status == GroupWorkoutSession.Status.COMPLETED:
-            return Response({'detail': 'Cannot cancel a completed session.'}, status=status.HTTP_400_BAD_REQUEST)
+        with transaction.atomic():
+            try:
+                session = GroupWorkoutSession.objects.select_for_update().get(
+                    id=session_id, group_workout__trainer=request.user
+                )
+            except GroupWorkoutSession.DoesNotExist:
+                return Response(status=status.HTTP_404_NOT_FOUND)
 
-        session.status = GroupWorkoutSession.Status.CANCELLED
-        session.save(update_fields=['status'])
+            if session.status != GroupWorkoutSession.Status.SCHEDULED:
+                return Response({'detail': 'Only scheduled sessions can be cancelled.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            session.status = GroupWorkoutSession.Status.CANCELLED
+            session.save(update_fields=['status'])
+
+            handle_group_session_cancellation(session)
+
         return Response({'detail': 'Session cancelled.'})
 
 

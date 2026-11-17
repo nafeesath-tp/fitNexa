@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { Users, Search, Activity, Dumbbell, Utensils, ArrowRight, ShieldCheck } from "lucide-react";
+import { Users, Search, Activity, Utensils, ArrowRight, ShieldCheck, MessageSquare, Dumbbell } from "lucide-react";
 import { clientManagementApi } from "../../services/clientManagementApi";
+import { chatApi } from "../../services/chatApi";
+import { useChatStore } from "../../stores/chatStore";
 import { PageHeader } from "../../components/ui/LayoutComponents";
 import Avatar from "../../components/ui/Avatar";
 import Badge from "../../components/ui/Badge";
@@ -196,25 +198,22 @@ const MyClients = () => {
                   </Button>
 
                   <button
-                    onClick={(e) => {
+                    onClick={async (e) => {
                       e.stopPropagation();
-                      navigate("/trainer/workout-plans");
+                      try {
+                        const res = await chatApi.startChatWithClient(client.client_id);
+                        if (res) {
+                          useChatStore.getState().setActiveConversation(res.id);
+                          navigate('/trainer/chat');
+                        }
+                      } catch (error) {
+                        toast.error("Failed to start chat.");
+                      }
                     }}
-                    title="Assign Workout Plan"
+                    title="Chat with Client"
                     className="p-2 rounded-lg bg-[#0f241a] border border-[#23533d] hover:border-emerald-500/50 text-emerald-400 transition-colors"
                   >
-                    <Dumbbell className="w-4 h-4" />
-                  </button>
-
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toast("Diet Plans (Module 9) integration active next!", { icon: "🥗" });
-                    }}
-                    title="Assign Diet Plan"
-                    className="p-2 rounded-lg bg-[#0f241a] border border-[#23533d] hover:border-emerald-500/50 text-emerald-400 transition-colors"
-                  >
-                    <Utensils className="w-4 h-4" />
+                    <MessageSquare className="w-4 h-4" />
                   </button>
                 </div>
               </div>

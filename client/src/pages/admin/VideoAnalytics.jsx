@@ -6,19 +6,24 @@ import toast from 'react-hot-toast';
 
 export default function AdminVideoAnalytics() {
   const [analytics, setAnalytics] = useState(null);
+  const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchAnalytics();
+    fetchData();
   }, []);
 
-  const fetchAnalytics = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
-      const data = await videoSessionsApi.getAdminAnalytics();
-      setAnalytics(data);
+      const [analyticsData, logsData] = await Promise.all([
+        videoSessionsApi.getAdminAnalytics(),
+        videoSessionsApi.getAdminLogs()
+      ]);
+      setAnalytics(analyticsData);
+      setLogs(logsData.results || logsData); // Handle paginated or non-paginated response
     } catch (error) {
-      toast.error('Failed to load video analytics');
+      toast.error('Failed to load video analytics and logs');
     } finally {
       setLoading(false);
     }
@@ -39,7 +44,7 @@ export default function AdminVideoAnalytics() {
           </h1>
           <p className="text-sm text-gray-400 mt-1">Platform-wide real-time video infrastructure performance.</p>
         </div>
-        <button onClick={fetchAnalytics} className="text-sm text-primary hover:text-primary/80 transition-colors flex items-center gap-1">
+        <button onClick={fetchData} className="text-sm text-primary hover:text-primary/80 transition-colors flex items-center gap-1">
           <Activity className="w-4 h-4" /> Refresh Data
         </button>
       </div>
@@ -151,6 +156,62 @@ export default function AdminVideoAnalytics() {
               </tbody>
             </table>
           </div>
+        </div>
+      </div>
+
+      {/* SESSION LOGS */}
+      <div className="bg-[#18342a] border border-[#1a3a2e] rounded-2xl overflow-hidden mt-8">
+        <div className="px-6 py-4 border-b border-[#1a3a2e]">
+          <h2 className="text-white font-bold uppercase tracking-wider text-sm flex items-center gap-2">
+            <Video className="w-4 h-4 text-primary" /> Detailed Session Logs
+          </h2>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead className="bg-[#152e25] text-xs uppercase text-[#a0b0a8]">
+              <tr>
+                <th className="px-6 py-4 font-bold">Room Name</th>
+                <th className="px-6 py-4 font-bold">Type</th>
+                <th className="px-6 py-4 font-bold">Trainer</th>
+                <th className="px-6 py-4 font-bold">Started At</th>
+                <th className="px-6 py-4 font-bold text-center">Duration</th>
+                <th className="px-6 py-4 font-bold text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#1a3a2e]">
+              {logs.length === 0 ? (
+                <tr><td colSpan={6} className="text-center py-8 text-gray-500">No session logs available.</td></tr>
+              ) : (
+                logs.map((log) => (
+                  <tr key={log.id} className="hover:bg-[#1a3a2e]/50 transition-colors">
+                    <td className="px-6 py-4 font-medium text-white truncate max-w-[150px]">{log.room_name}</td>
+                    <td className="px-6 py-4 text-gray-300 capitalize">{log.session_type}</td>
+                    <td className="px-6 py-4 text-gray-300">{log.trainer_name}</td>
+                    <td className="px-6 py-4 text-gray-400 text-sm">
+                      {log.started_at ? new Date(log.started_at).toLocaleString() : 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 text-center text-white">
+                      {log.duration_seconds > 0 ? (
+                        <span>{Math.round(log.duration_seconds / 60)} <span className="text-xs text-gray-500">min</span></span>
+                      ) : (
+                        '-'
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <span className={`px-2 py-1 text-xs font-bold rounded-full ${
+                        log.status === 'ended' ? 'bg-green-500/10 text-green-500' :
+                        log.status === 'cancelled' ? 'bg-red-500/10 text-red-500' :
+                        log.status === 'live' ? 'bg-blue-500/10 text-blue-500' :
+                        'bg-gray-500/10 text-gray-500'
+                      }`}>
+                        {log.status.toUpperCase()}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 

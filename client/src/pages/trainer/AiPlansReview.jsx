@@ -12,6 +12,25 @@ export default function AiPlansReview() {
     fetchPlans();
   }, []);
 
+  // Poll when any plan is in PENDING or GENERATING status
+  useEffect(() => {
+    const hasActiveTask = plans.some((p) => ['PENDING', 'GENERATING'].includes(p.status));
+    if (!hasActiveTask) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await aiPlansApi.getAllTrainerPlans();
+        if (res.success) {
+          setPlans(res.data);
+        }
+      } catch (error) {
+        console.error("Failed to poll trainer plans:", error);
+      }
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [plans]);
+
   const fetchPlans = async () => {
     try {
       setLoading(true);
@@ -100,13 +119,19 @@ export default function AiPlansReview() {
                       {new Date(plan.created_at).toLocaleDateString()}
                     </td>
                     <td className="p-4 text-right">
-                      <Link 
-                        to={`/trainer/ai-plans/${plan.id}`}
-                        className="inline-flex items-center gap-1 text-sm text-primary hover:text-white transition-colors"
-                      >
-                        {plan.status === 'GENERATED' ? 'Review Plan' : 'View Details'}
-                        <ArrowRight className="w-4 h-4" />
-                      </Link>
+                      {['PENDING', 'GENERATING'].includes(plan.status) ? (
+                        <span className="inline-flex items-center gap-1.5 text-xs text-yellow-500 font-medium bg-yellow-500/10 px-2.5 py-1 rounded-md border border-yellow-500/20">
+                          <Clock className="w-3.5 h-3.5 animate-pulse" /> Generating...
+                        </span>
+                      ) : (
+                        <Link 
+                          to={`/trainer/ai-plans/${plan.id}`}
+                          className="inline-flex items-center gap-1 text-sm text-primary hover:text-white transition-colors"
+                        >
+                          {plan.status === 'GENERATED' ? 'Review Plan' : 'View Details'}
+                          <ArrowRight className="w-4 h-4" />
+                        </Link>
+                      )}
                     </td>
                   </tr>
                 ))}

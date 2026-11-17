@@ -19,11 +19,28 @@ SECRET_KEY = config("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config("DEBUG", cast=bool)
 
-ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
+ALLOWED_HOSTS = ["127.0.0.1", "localhost", "0.0.0.0", "*"] if DEBUG else ["127.0.0.1", "localhost"]
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
+    "http://localhost:3000",
+]
+
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^http://localhost:\d+$",
+    r"^http://127\.0\.0\.1:\d+$",
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -63,6 +80,7 @@ INSTALLED_APPS = [
     'video_sessions',
     'channels',
     'chat',
+    'payments',
 ]
 
 MIDDLEWARE = [
@@ -234,6 +252,10 @@ STRIPE_PUBLIC_KEY = config('STRIPE_PUBLIC_KEY', default='')
 STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY', default='')
 STRIPE_WEBHOOK_SECRET = config('STRIPE_WEBHOOK_SECRET', default='')
 
+# Module 19: Commission Configuration (Configurable via environment variables)
+PLATFORM_COMMISSION_PERCENTAGE = config('PLATFORM_COMMISSION_PERCENTAGE', default='20.00')
+TRAINER_COMMISSION_PERCENTAGE = config('TRAINER_COMMISSION_PERCENTAGE', default='80.00')
+
 # Group Workouts Configurations
 GROUP_WORKOUT_CAPACITY = 20
 
@@ -244,3 +266,19 @@ LIVEKIT_URL = config("LIVEKIT_URL", default="")
 
 # Google Gemini AI Configuration
 GEMINI_API_KEY = config('GEMINI_API_KEY', default='')
+
+# Celery Configuration
+# In development (no Redis running), tasks execute synchronously in the same
+# Django process via CELERY_TASK_ALWAYS_EAGER=True. This means .delay() calls
+# run inline — no broker, no worker process, no Redis required.
+# In production, set CELERY_TASK_ALWAYS_EAGER=False and start a Redis broker + worker.
+CELERY_BROKER_URL = config("CELERY_BROKER_URL", default="redis://127.0.0.1:6379/0")
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_TASK_TRACK_STARTED = True
+
+# Run Celery tasks synchronously (inline) when True — no Redis broker needed.
+# Flip to False in production when a real Celery worker + Redis is available.
+CELERY_TASK_ALWAYS_EAGER = config("CELERY_TASK_ALWAYS_EAGER", default=True, cast=bool)
+CELERY_TASK_EAGER_PROPAGATES = True  # Surface exceptions immediately in development

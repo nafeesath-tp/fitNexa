@@ -3,6 +3,7 @@ import { contentApi } from "../../services/contentApi";
 import { useContentStore } from "../../stores/contentStore";
 import api from "../../api/axios";
 import toast from "react-hot-toast";
+import { confirmDialog } from "../../components/ui/CustomAlert";
 import {
   Plus,
   Pencil,
@@ -185,7 +186,13 @@ export default function AdminContent() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this video?")) return;
+    const confirmed = await confirmDialog({
+      title: "Delete Video",
+      message: "Are you sure you want to delete this video? This cannot be undone.",
+      confirmText: "Delete Video",
+      variant: "danger",
+    });
+    if (!confirmed) return;
     setDeletingId(id);
     try {
       const res = await contentApi.deleteAdminVideo(id);

@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from accounts.permissions import IsAdmin, IsTrainer, IsClient
+from accounts.models import User
 from .serializers import AssignTrainerSerializer
 from .services import (
     get_admin_client_assignments,
@@ -87,6 +88,32 @@ class AdminReassignTrainerAPIView(APIView):
             },
             status=status.HTTP_200_OK
         )
+
+class AdminUpdateSessionCreditsAPIView(APIView):
+    """
+    PATCH /api/client-management/admin/credits/<int:client_id>/
+    Update the session_credits for a client: { "session_credits": 10 }
+    """
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def patch(self, request, client_id):
+        credits = request.data.get("session_credits")
+        if credits is None:
+            return Response({"success": False, "message": "session_credits is required."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            client_user = User.objects.get(id=client_id, role=User.Role.CLIENT)
+            profile = client_user.client_profile
+            profile.session_credits = int(credits)
+            profile.save(update_fields=['session_credits'])
+            return Response({
+                "success": True, 
+                "message": f"Successfully updated session credits to {credits} for {client_user.email}."
+            })
+        except User.DoesNotExist:
+            return Response({"success": False, "message": "Client not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"success": False, "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 # ── Trainer Endpoints ────────────────────────────────────────────────────────

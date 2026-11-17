@@ -39,7 +39,7 @@ def _call_gemini(prompt):
         raise ValidationError("GEMINI_API_KEY is not configured in settings.")
     client = google_genai.Client(api_key=api_key)
     response = client.models.generate_content(
-        model="gemini-2.0-flash",
+        model="gemini-3.8-flash",
         contents=prompt,
     )
     return response.text
@@ -216,6 +216,7 @@ def _build_prompt(client_context, questionnaire, week_number, progress_context=N
         "- Ensure meals cover the full day with realistic portion sizes.",
         "- Make exercises achievable given the equipment and location specified.",
         "- Calorie totals per day should closely match the calorie_target.",
+        "- CRITICAL: For beginner clients, you MUST include brief step-by-step instructions on how to perform each exercise in the 'notes' field.",
         "\n\n=== REQUIRED JSON SCHEMA ===\n",
         JSON_SCHEMA,
         "\n\nReturn ONLY the JSON. No markdown. No explanation.",
@@ -238,38 +239,41 @@ def parse_and_save_workout(trainer_user, ai_data, week_number):
         "INTERMEDIATE": WorkoutPlan.DifficultyLevel.INTERMEDIATE,
         "ADVANCED": WorkoutPlan.DifficultyLevel.ADVANCED,
     }
+    raw_diff = str(wp_data.get("difficulty", "BEGINNER")).upper()
+    diff_val = difficulty_map.get(raw_diff, WorkoutPlan.DifficultyLevel.BEGINNER)
+
+    raw_title = wp_data.get("title", f"AI Workout Plan – Week {week_number}")
+    plan_title = f"[AI] {raw_title}"[:200]
 
     plan = WorkoutPlan.objects.create(
         trainer=trainer_user,
-        title=wp_data.get("title", f"AI Workout Plan – Week {week_number}"),
+        title=plan_title,
         description=wp_data.get("description", ""),
-        difficulty=difficulty_map.get(wp_data.get("difficulty", "BEGINNER"), WorkoutPlan.DifficultyLevel.BEGINNER),
+        difficulty=diff_val,
         duration_weeks=1,
         is_active=True,
     )
-    # Mark as AI generated
-    plan.title = f"[AI] {plan.title}"
-    plan.save()
 
     # Single week
-    week = WorkoutWeek.objects.create(plan=plan, week_number=1, title=f"Week {week_number}")
+    week = WorkoutWeek.objects.create(plan=plan, week_number=1, title=f"Week {week_number}"[:100])
 
     for day_data in wp_data.get("days", []):
+        day_num = day_data.get("day_number", 1)
         day = WorkoutDay.objects.create(
             week=week,
-            day_number=day_data.get("day_number", 1),
-            title=day_data.get("title", f"Day {day_data.get('day_number', 1)}"),
+            day_number=day_num,
+            title=str(day_data.get("title", f"Day {day_num}"))[:150],
             is_rest_day=day_data.get("is_rest_day", False),
         )
         if not day_data.get("is_rest_day", False):
             for order, ex_data in enumerate(day_data.get("exercises", []), start=1):
                 WorkoutExercise.objects.create(
                     day=day,
-                    exercise_name=ex_data.get("exercise_name", "Exercise"),
+                    exercise_name=str(ex_data.get("exercise_name", "Exercise"))[:200],
                     sets=ex_data.get("sets", 3),
-                    reps=str(ex_data.get("reps", "10")),
+                    reps=str(ex_data.get("reps", "10"))[:100],
                     rest_seconds=ex_data.get("rest_seconds", 60),
-                    notes=ex_data.get("notes", ""),
+                    notes=str(ex_data.get("notes", "")),
                     order=order,
                 )
 
@@ -290,37 +294,48 @@ def parse_and_save_diet(trainer_user, ai_data, week_number):
         "ENDURANCE": DietPlan.GoalType.ENDURANCE,
         "GENERAL": DietPlan.GoalType.GENERAL,
     }
+    raw_goal = str(dp_data.get("goal", "GENERAL")).upper()
+    goal_val = goal_map.get(raw_goal, DietPlan.GoalType.GENERAL)
+
+    raw_diet_title = dp_data.get("title", f"AI Diet Plan – Week {week_number}")
+    diet_title = f"[AI] {raw_diet_title}"[:200]
 
     plan = DietPlan.objects.create(
         trainer=trainer_user,
-        title=f"[AI] {dp_data.get('title', f'AI Diet Plan – Week {week_number}')}",
+        title=diet_title,
         description=dp_data.get("description", ""),
         calories=dp_data.get("calorie_target", 1800),
-        goal=goal_map.get(dp_data.get("goal", "GENERAL"), DietPlan.GoalType.GENERAL),
+        goal=goal_val,
         duration_weeks=1,
         is_active=True,
     )
 
-    week = DietWeek.objects.create(plan=plan, week_number=1, title=f"Week {week_number}")
+    week = DietWeek.objects.create(plan=plan, week_number=1, title=f"Week {week_number}"[:100])
+
+    valid_meal_types = dict(DietMeal.MealType.choices)
 
     for day_data in dp_data.get("days", []):
+        day_num = day_data.get("day_number", 1)
         day = DietDay.objects.create(
             week=week,
-            day_number=day_data.get("day_number", 1),
-            title=day_data.get("title", f"Day {day_data.get('day_number', 1)}"),
+            day_number=day_num,
+            title=str(day_data.get("title", f"Day {day_num}"))[:100],
             water_target_liters=day_data.get("water_target_liters", 3.0),
         )
         for meal_data in day_data.get("meals", []):
+            raw_meal_type = str(meal_data.get("meal_type", "")).upper()
+            meal_type = raw_meal_type if raw_meal_type in valid_meal_types else DietMeal.MealType.OTHER
+
             DietMeal.objects.create(
                 day=day,
-                meal_type=meal_data.get("meal_type", DietMeal.MealType.OTHER),
+                meal_type=meal_type,
                 order=meal_data.get("order", 1),
                 calories=meal_data.get("calories", 400),
                 protein_g=meal_data.get("protein_g", 25),
                 carbs_g=meal_data.get("carbs_g", 50),
                 fats_g=meal_data.get("fats_g", 15),
-                items_description=meal_data.get("items_description", ""),
-                notes=meal_data.get("notes", ""),
+                items_description=str(meal_data.get("items_description", "")),
+                notes=str(meal_data.get("notes", "")),
             )
 
     return plan
@@ -401,14 +416,28 @@ def generate_ai_plan(ai_request):
         logger.exception("Gemini API call failed")
         raise ValidationError(f"AI generation failed: {str(e)}")
 
-    # Parse and save plans
-    workout_plan = parse_and_save_workout(trainer, ai_data, ai_request.week_number)
-    diet_plan    = parse_and_save_diet(trainer, ai_data, ai_request.week_number)
+    # Parse and save plans atomically so failure in either plan rolls back both,
+    # preventing incomplete or orphaned plan records in the database.
+    try:
+        with transaction.atomic():
+            workout_plan = parse_and_save_workout(trainer, ai_data, ai_request.week_number)
+            diet_plan    = parse_and_save_diet(trainer, ai_data, ai_request.week_number)
 
-    ai_request.workout_plan = workout_plan
-    ai_request.diet_plan    = diet_plan
-    ai_request.status       = AIPlanRequest.Status.GENERATED
-    ai_request.save()
+            if not workout_plan or not diet_plan:
+                raise ValidationError("Both workout and diet plans must be created.")
+
+            ai_request.workout_plan = workout_plan
+            ai_request.diet_plan    = diet_plan
+            ai_request.status       = AIPlanRequest.Status.GENERATED
+            ai_request.error_message = ""
+            ai_request.save(update_fields=["workout_plan", "diet_plan", "status", "error_message"])
+
+    except Exception as e:
+        logger.exception(f"Failed to parse and save workout or diet plan for request {ai_request.id}: {e}")
+        ai_request.status = AIPlanRequest.Status.GENERATION_FAILED
+        ai_request.error_message = str(e)
+        ai_request.save(update_fields=["status", "error_message"])
+        raise ValidationError(f"Plan creation failed: {str(e)}")
 
     return ai_request
 

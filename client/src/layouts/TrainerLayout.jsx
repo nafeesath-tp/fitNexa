@@ -5,7 +5,7 @@ import { useTrainerStore } from '../stores/trainerStore';
 import { authApi } from '../services/auth/authApi';
 import Navbar from '../components/layout/Navbar';
 import toast from 'react-hot-toast';
-import { LayoutDashboard, Users, CalendarDays, MessageSquare, Wallet, Clock, LogOut, Bell, Menu, X, Activity, Dumbbell, Utensils, Layers2, Sparkles, LayoutGrid } from 'lucide-react';
+import { LayoutDashboard, Users, CalendarDays, MessageSquare, Wallet, Clock, LogOut, Bell, Menu, X, Activity, Layers2, Sparkles, LayoutGrid } from 'lucide-react';
 import { cn } from '../utils/cn';
 
 const TrainerLayout = () => {
@@ -32,9 +32,6 @@ const TrainerLayout = () => {
   const navLinks = [
     { label: 'Dashboard', path: '/trainer/home', icon: LayoutDashboard },
     { label: 'Clients', path: '/trainer/clients', icon: Users },
-    { label: 'Batches', path: '/trainer/groups', icon: Layers2 },
-    { label: 'Workout Plans', path: '/trainer/workout-plans', icon: Dumbbell },
-    { label: 'Diet Plans', path: '/trainer/diet-plans', icon: Utensils },
     { label: 'AI Plans', path: '/trainer/ai-plans', icon: Sparkles },
     { label: 'Group Workouts', path: '/trainer/group-workouts', icon: LayoutGrid },
     { label: 'Sessions', path: '/trainer/sessions', icon: CalendarDays },

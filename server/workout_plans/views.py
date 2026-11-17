@@ -7,7 +7,7 @@ from accounts.permissions import IsTrainer, IsClient, IsApprovedTrainer
 from .services import (
     get_trainer_plans, create_workout_plan, get_plan_detail,
     update_workout_plan, delete_workout_plan,
-    add_week, add_day, add_exercise, delete_exercise,
+    add_week, add_day, add_exercise, delete_exercise, update_exercise,
     assign_plan_to_client, get_trainer_assignments,
     get_client_current_workout, complete_workout_day, get_client_progress,
     assign_workout_to_group,
@@ -88,9 +88,16 @@ class TrainerAddExerciseAPIView(APIView):
         return Response({"success": True, "data": data}, status=status.HTTP_201_CREATED)
 
 
-class TrainerDeleteExerciseAPIView(APIView):
-    """DELETE /api/workouts/trainer/plans/<plan_id>/exercises/<exercise_id>/"""
+class TrainerExerciseDetailAPIView(APIView):
+    """
+    PATCH /api/workouts/trainer/plans/<plan_id>/exercises/<exercise_id>/
+    DELETE /api/workouts/trainer/plans/<plan_id>/exercises/<exercise_id>/
+    """
     permission_classes = [IsAuthenticated, IsApprovedTrainer]
+
+    def patch(self, request, plan_id, exercise_id):
+        data = update_exercise(request.user, plan_id, exercise_id, request.data)
+        return Response({"success": True, "data": data})
 
     def delete(self, request, plan_id, exercise_id):
         delete_exercise(request.user, plan_id, exercise_id)

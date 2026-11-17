@@ -3,10 +3,10 @@ Subscription Service Layer
 ==========================
 All business logic lives here — views stay thin.
 
-Razorpay integration point:
-  When Razorpay is added, replace the body of `confirm_subscription_payment`
-  with a Razorpay order verification call, then call the same
-  `_activate_subscription` helper.
+Payment integration:
+  Stripe Checkout Session is initiated via `create-stripe-session`,
+  and confirmed via Stripe webhook calling `handle_successful_payment`.
+  A simulated confirm endpoint (`confirm_subscription_payment`) is also available for testing.
 """
 
 from decimal import Decimal
@@ -61,24 +61,29 @@ def _calculate_prorated_upgrade_amount(
 
 
 def _calculate_expiry(billing_cycle: str) -> object:
-    """Return expiry datetime based on billing cycle."""
+    """Return expiry datetime based on billing cycle (28 days for monthly, 364 days for yearly)."""
     now = timezone.now()
     if billing_cycle == ClientSubscription.BillingCycle.YEARLY:
-        return now + timedelta(days=365)
-    return now + timedelta(days=30)
+        return now + timedelta(days=364)
+    return now + timedelta(days=28)
 
 
 def _activate_subscription(subscription: ClientSubscription) -> ClientSubscription:
     """
     Move a subscription from PENDING → ACTIVE.
     Sets started_at and expires_at.
-    Called by confirm_subscription_payment (and later by Razorpay webhook).
+    Allocates initial 28-day period credits (12 PT or 16 Group) via payments service.
     """
     now = timezone.now()
     subscription.payment_status = ClientSubscription.PaymentStatus.ACTIVE
     subscription.started_at     = now
     subscription.expires_at     = _calculate_expiry(subscription.billing_cycle)
     subscription.save(update_fields=["payment_status", "started_at", "expires_at", "updated_at"])
+
+    # Allocate initial period credits atomically with idempotency protection
+    from payments.services import allocate_subscription_credits
+    allocate_subscription_credits(subscription, period_number=1)
+
     return subscription
 
 
@@ -174,8 +179,8 @@ def purchase_subscription(user, plan_id: int, billing_cycle: str, auto_renew: bo
 def confirm_subscription_payment(user, subscription_id: int) -> ClientSubscription:
     """
     Confirm payment locally (dev/testing only).
-    Activates the PENDING subscription and cancels any other ACTIVE plan
-    the client had — same logic as the Stripe webhook.
+    Records PaymentTransaction, activates the PENDING subscription,
+    allocates credits, and cancels any other ACTIVE plan.
     """
     try:
         subscription = ClientSubscription.objects.get(
@@ -189,7 +194,20 @@ def confirm_subscription_payment(user, subscription_id: int) -> ClientSubscripti
             {"detail": f"Subscription is already {subscription.payment_status}."}
         )
 
-    # Activate the new subscription
+    # Record payment transaction
+    from payments.services import record_payment_transaction
+    from payments.models import PaymentTransaction
+    record_payment_transaction(
+        subscription=subscription,
+        amount=subscription.amount_paid,
+        transaction_type=PaymentTransaction.TransactionType.SUBSCRIPTION_PURCHASE,
+        status=PaymentTransaction.Status.SUCCESS,
+        payment_gateway="SIMULATED",
+        stripe_session_id=subscription.stripe_session_id or f"sim_{subscription.id}",
+        idempotency_key=f"SIMULATED_CONFIRM_SUB_{subscription.id}",
+    )
+
+    # Activate the new subscription (which allocates credits)
     subscription = _activate_subscription(subscription)
 
     # Cancel any old ACTIVE subscriptions now that payment is confirmed
@@ -203,21 +221,37 @@ def confirm_subscription_payment(user, subscription_id: int) -> ClientSubscripti
     return subscription
 
 
-def handle_successful_payment(subscription_id: int):
+def handle_successful_payment(subscription_id: int, stripe_session: dict = None):
     """
     Called by the Stripe Webhook when checkout.session.completed fires.
 
-    Activates the new subscription, then cancels any previously ACTIVE
-    subscription the client had (the old plan they were upgrading from).
-    This is the ONLY place where the old plan gets cancelled — ensuring
-    the client never loses access if they abandon the Stripe checkout.
+    Records PaymentTransaction with idempotency protection, activates the
+    new subscription (allocating credits), and cancels old active plans.
     """
     try:
-        subscription = ClientSubscription.objects.select_related('client').get(
+        subscription = ClientSubscription.objects.select_related('client', 'plan').get(
             id=subscription_id
         )
+        from payments.services import record_payment_transaction
+        from payments.models import PaymentTransaction
+
+        session_id = (stripe_session or {}).get('id') or subscription.stripe_session_id or f"sub_{subscription.id}"
+        payment_intent = (stripe_session or {}).get('payment_intent', '')
+
+        record_payment_transaction(
+            subscription=subscription,
+            amount=subscription.amount_paid,
+            transaction_type=PaymentTransaction.TransactionType.SUBSCRIPTION_PURCHASE,
+            status=PaymentTransaction.Status.SUCCESS,
+            payment_gateway="STRIPE",
+            stripe_session_id=session_id,
+            stripe_payment_intent_id=payment_intent,
+            idempotency_key=f"STRIPE_CHECKOUT_{session_id}",
+            raw_response=stripe_session or {},
+        )
+
         if subscription.payment_status == ClientSubscription.PaymentStatus.PENDING:
-            # Step 1: Activate new subscription
+            # Step 1: Activate new subscription (allocates credits)
             _activate_subscription(subscription)
 
             # Step 2: Cancel the client's old ACTIVE subscription (if any)
@@ -232,14 +266,18 @@ def handle_successful_payment(subscription_id: int):
 
 
 def get_current_subscription(user) -> ClientSubscription | None:
-    """Return the client's current ACTIVE subscription, or None."""
-    return (
+    """Return the client's current ACTIVE subscription, releasing any due 28-day credits."""
+    sub = (
         ClientSubscription.objects
         .select_related("plan")
         .filter(client=user, payment_status=ClientSubscription.PaymentStatus.ACTIVE)
         .order_by("-started_at")
         .first()
     )
+    if sub:
+        from payments.services import check_and_allocate_period_credits
+        check_and_allocate_period_credits(user, sub)
+    return sub
 
 
 def get_subscription_history(user) -> list:
